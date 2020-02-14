@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall
 RMFLAGS = -rf
 EXEC = project
-OBJS = relation.o
+OBJS = relation.o results.o
 
 all: project usage
 
@@ -12,6 +12,9 @@ project: $(OBJS) project.cpp
 
 relation.o: relation.c
 	$(CC) $(CFLAGS) -c relation.c
+
+results.o: results.c
+	$(CC) $(CFLAGS) -c results.c
 
 usage:
 	@echo 'Usage of project: valgrind ./project'
