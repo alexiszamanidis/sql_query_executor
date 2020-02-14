@@ -31,3 +31,6 @@
 *.out
 *.app
 project
+
+# output files
+*.csv

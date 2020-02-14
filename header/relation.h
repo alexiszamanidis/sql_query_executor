@@ -13,10 +13,11 @@ class relation {
         tuple *tuples;
         int64_t num_tuples;
     public:
-        relation(int);
+        relation();
         ~relation();
-        void relation_initialize();
+        void relation_initialize_random(int);
         void relation_print();
+        void relation_initialize_with_dataset(char *);
 };
 
 #endif
