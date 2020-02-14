@@ -5,8 +5,6 @@
 
 #include "./header.h"
 
-struct bucket * initialize_bucket();
-
 struct row_key_tuple {
     uint64_t row_key_1;
     uint64_t row_key_2;
@@ -30,6 +28,7 @@ class results {
         ~results();
         void insert_tuple(uint64_t , uint64_t );
         void results_print();
+        struct bucket *results_initialize_bucket();
 };
 
 #endif

@@ -20,7 +20,7 @@ void results::insert_tuple(uint64_t row_key_1, uint64_t row_key_2) {
     // If the list is empty, insert a new bucket and push the tuple at the first position. Also fix head and tail
     if( this->number_of_buckets == 0 ) {
         // fix list data
-        this->head = initialize_bucket();
+        this->head = results_initialize_bucket();
         this->tail = this->head;
         this->number_of_buckets++;
         // fix bucket data
@@ -31,7 +31,7 @@ void results::insert_tuple(uint64_t row_key_1, uint64_t row_key_2) {
     // If the bucket is full then insert a new bucket and push the tuple at the first position. Fix only tail
     else if( this->tail->current_size == this->tail->max_size ) {
         // fix list data
-        this->tail->next_bucket = initialize_bucket();
+        this->tail->next_bucket = results_initialize_bucket();
         this->number_of_buckets++;
         this->tail = this->tail->next_bucket;
         // fix bucket data
@@ -60,7 +60,7 @@ void results::results_print() {
     }
 }
 
-struct bucket * initialize_bucket() {
+struct bucket *results::results_initialize_bucket() {
     struct bucket *new_bucket = (struct bucket *)malloc(sizeof(struct bucket));
     error_handler(new_bucket == NULL, "malloc failed");
     new_bucket->tuples = (struct row_key_tuple *)malloc(NUMBER_OF_TUPLES_IN_BUCKET*sizeof(struct row_key_tuple));
