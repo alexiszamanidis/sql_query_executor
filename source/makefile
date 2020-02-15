@@ -1,8 +1,8 @@
 CC = g++
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -pthread
 RMFLAGS = -rf
 EXEC = project
-OBJS = relation.o results.o sql_query.o file_array.o
+OBJS = relation.o results.o sql_query.o file_array.o job_scheduler.o
 
 all: project usage
 
