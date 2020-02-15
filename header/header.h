@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <stdint.h>
+#include <queue>
+#include <cstring>
 
 #define SUCCESS 0
 #define FAILURE -1

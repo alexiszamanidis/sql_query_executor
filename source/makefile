@@ -7,7 +7,7 @@ OBJS = relation.o results.o
 all: project usage
 
 project: $(OBJS) project.cpp
-	$(CC) $(OBJS) $(CFLAGS) project.cpp -o $(EXEC)
+	$(CC) $(CFLAGS) $(OBJS) project.cpp -o $(EXEC)
 	rm $(RMFLAGS) $(OBJS)
 
 relation.o: relation.c
