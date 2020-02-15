@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall -pthread
 RMFLAGS = -rf
 EXEC = project
-OBJS = relation.o results.o sql_query.o file_array.o job_scheduler.o
+OBJS = relation.o results.o sql_query.o file_array.o job_scheduler.o  intermidiate_results.o
 
 all: project usage
 
@@ -21,6 +21,9 @@ sql_query.o: sql_query.cpp
 
 file_array.o: file_array.cpp
 	$(CC) $(CFLAGS) -c file_array.cpp
+
+intermidiate_results.o: intermidiate_results.cpp
+	$(CC) $(CFLAGS) -c intermidiate_results.cpp
 
 usage:
 	@echo 'Usage of project: valgrind ./project'

@@ -4,6 +4,7 @@
 #include "../header/sql_query.h"
 #include "../header/file_array.h"
 #include "../header/job_scheduler.h"
+#include "../header/intermidiate_results.h"
 
 job_scheduler *job_scheduler_ = new job_scheduler(2);
 
@@ -24,18 +25,14 @@ void test_function_2(void *argument) {
 int main(int argc, char **argv) {
     int barrier = 0;
 
-    for( int i = 0 ; i < 10 ; i ++) {
-        struct test *test = (struct test *)malloc(sizeof(struct test));
-        error_handler(test == NULL,"malloc failed");
-        test->x = i;
-        test->y = i;
-        job_scheduler_->schedule_job_scheduler(test_function,test,&barrier);
-        job_scheduler_->schedule_job_scheduler(test_function_2,NULL,&barrier);
-    }
-    
+    file_array *file_array_ = new file_array();
+
+    read_queries(file_array_);
+
     job_scheduler_->dynamic_barrier_job_scheduler(&barrier);
     job_scheduler_->stop_job_scheduler();
     delete job_scheduler_;
+    delete file_array_;
 
     return SUCCESS;
 }
