@@ -1,20 +1,13 @@
 #include "../header/header.h"
 #include "../header/relation.h"
 #include "../header/results.h"
+#include "../header/sql_query.h"
 
 int main(int argc, char **argv) {
-    relation relation, relation_2;
-    results results;
-
-    relation.relation_initialize_with_dataset((char*)"../dataset/small/relA");
-    relation.sort_iterative();
-
-    relation_2.relation_initialize_with_dataset((char*)"../dataset/small/relB");
-    relation_2.sort_iterative();
-
-    parallel_join(&relation,&relation_2,&results);
-
-    results.results_print();
+    char query[] = "3 0 1|0.2=1.0&0.1=2.0&0.2>3499|1.2 0.1";
+    sql_query sql_query(query);
+    
+    sql_query.sql_query_print();
 
     return SUCCESS;
 }

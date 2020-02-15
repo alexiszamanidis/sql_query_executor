@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <queue>
 #include <cstring>
+#include <vector>
 
 #define SUCCESS 0
 #define FAILURE -1
