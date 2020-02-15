@@ -10,17 +10,17 @@ project: $(OBJS) project.cpp
 	$(CC) $(CFLAGS) $(OBJS) project.cpp -o $(EXEC)
 	rm $(RMFLAGS) $(OBJS)
 
-relation.o: relation.c
-	$(CC) $(CFLAGS) -c relation.c
+relation.o: relation.cpp
+	$(CC) $(CFLAGS) -c relation.cpp
 
-results.o: results.c
-	$(CC) $(CFLAGS) -c results.c
+results.o: results.cpp
+	$(CC) $(CFLAGS) -c results.cpp
 
-sql_query.o: sql_query.c
-	$(CC) $(CFLAGS) -c sql_query.c
+sql_query.o: sql_query.cpp
+	$(CC) $(CFLAGS) -c sql_query.cpp
 
-file_array.o: file_array.c
-	$(CC) $(CFLAGS) -c file_array.c
+file_array.o: file_array.cpp
+	$(CC) $(CFLAGS) -c file_array.cpp
 
 usage:
 	@echo 'Usage of project: valgrind ./project'
