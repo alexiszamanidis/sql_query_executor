@@ -2,7 +2,7 @@ CC = g++
 CFLAGS = -g -Wall
 RMFLAGS = -rf
 EXEC = project
-OBJS = relation.o results.o sql_query.o
+OBJS = relation.o results.o sql_query.o file_array.o
 
 all: project usage
 
@@ -18,6 +18,9 @@ results.o: results.c
 
 sql_query.o: sql_query.c
 	$(CC) $(CFLAGS) -c sql_query.c
+
+file_array.o: file_array.c
+	$(CC) $(CFLAGS) -c file_array.c
 
 usage:
 	@echo 'Usage of project: valgrind ./project'

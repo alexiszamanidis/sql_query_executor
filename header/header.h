@@ -6,6 +6,12 @@
 #include <queue>
 #include <cstring>
 #include <vector>
+#include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 
 #define SUCCESS 0
 #define FAILURE -1
