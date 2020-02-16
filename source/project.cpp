@@ -23,11 +23,19 @@ void test_function_2(void *argument) {
 }
 
 int main(int argc, char **argv) {
+    struct timespec begin, end;
+    double time_spent;
     int barrier = 0;
 
     file_array *file_array_ = new file_array();
 
+    clock_gettime(CLOCK_MONOTONIC, &begin);
     read_queries(file_array_);
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    time_spent = (end.tv_sec - begin.tv_sec);
+    time_spent = time_spent + (end.tv_nsec-begin.tv_nsec)/1000000000.0;
+    printf("Execution time = %f\n",time_spent);
 
     job_scheduler_->dynamic_barrier_job_scheduler(&barrier);
     job_scheduler_->stop_job_scheduler();
