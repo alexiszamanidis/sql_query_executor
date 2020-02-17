@@ -7,11 +7,11 @@ struct file {
     char *name;
     uint64_t number_of_rows;
     uint64_t number_of_columns;
-    uint64_t *array;
+    int64_t *array;
 };
 
 class file_array {
-    private:
+    public:
         std::vector<struct file *> files;
     public:
         file_array();

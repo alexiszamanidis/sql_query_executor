@@ -1,9 +1,147 @@
 #include "../header/intermidiate_results.h"
 
+intermidiate_filter::intermidiate_filter(uint64_t file_index, uint64_t predicate_relation) {
+    this->file_index = file_index;
+    this->predicate_relation = predicate_relation;
+}
+
+intermidiate_filter::~intermidiate_filter() {}
+
+intermidiate_join::intermidiate_join(uint64_t *file_index, uint64_t *predicate_relation) {
+    this->file_index[0] = file_index[0];
+    this->file_index[1] = file_index[1];
+    this->predicate_relation[0] = predicate_relation[0];
+    this->predicate_relation[1] = predicate_relation[1];
+    this->sorted_relations[0] = -1;
+    this->sorted_relations[1] = -1;
+    this->sorted_relation_columns[0] = -1;
+    this->sorted_relation_columns[1] = -1;
+}
+
+intermidiate_join::~intermidiate_join() {}
+
+intermidiate_results::intermidiate_results() {}
+
+intermidiate_results::~intermidiate_results() {
+    intermidiate_filter *intermidiate_filter_results = NULL;
+    uint size = this->filter_results.size();
+    for( uint i = 0 ; i < size ; i++ ) {
+        intermidiate_filter_results = this->filter_results[0];
+        this->filter_results.erase(this->filter_results.begin());
+        delete intermidiate_filter_results;
+    }
+}
+
+bool join(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
+    return true;
+}
+
+uint search_intermidiate_results_filters(intermidiate_results *intermidiate_results_, int64_t predicate_relation) {
+    for( uint i = 0 ; i < intermidiate_results_->filter_results.size() ; i++ )
+        if( intermidiate_results_->filter_results[i]->predicate_relation == predicate_relation )
+            return i;
+    return -1;
+}
+
+bool filter(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
+    intermidiate_filter *filter_results = new intermidiate_filter(relations[predicate[ROW_A]],predicate[ROW_A]), *intermidiate_filter_results = NULL;
+
+    int64_t file_index = relations[predicate[ROW_A]], predicate_relation = predicate[ROW_A];
+    int64_t column_a = predicate[COLUMN_A], filter_number = predicate[ROW_B], column_b = predicate[COLUMN_B];
+    int64_t operator_ = predicate[OPERATOR];
+    int filter_index = search_intermidiate_results_filters(intermidiate_results_,predicate_relation);
+
+    struct file *file = file_array->files[file_index];
+
+    // if the relation does not exist in intermidiate results
+    if( filter_index == -1 ) {
+        if( operator_ == EQUAL ) {
+            for( uint i = 0 ; i < file->number_of_rows ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] == filter_number )
+                    filter_results->row_ids.push_back(i);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] == file->array[column_b*file->number_of_rows + i] )
+                    filter_results->row_ids.push_back(i);
+        }
+        else if( operator_ == GREATER ) {
+            for( uint i = 0 ; i < file->number_of_rows ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] > filter_number )
+                    filter_results->row_ids.push_back(i);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] > file->array[column_b*file->number_of_rows + i] )
+                    filter_results->row_ids.push_back(i);
+        }
+        else {	// LESS
+            for( uint i = 0 ; i < file->number_of_rows ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] < filter_number )
+                    filter_results->row_ids.push_back(i);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] < file->array[column_b*file->number_of_rows + i] )
+                    filter_results->row_ids.push_back(i);
+        }
+    }
+    // if the relation exists in intermidiate results
+    else {
+        intermidiate_filter_results = intermidiate_results_->filter_results[filter_index];
+
+        if( operator_ == EQUAL ) {
+            for( uint i = 0 ; i < intermidiate_filter_results->row_ids.size() ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] == filter_number )
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] == file->array[column_b*file->number_of_rows+intermidiate_filter_results->row_ids[i]])
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+        }
+        else if( operator_ == GREATER ) {
+            for( uint i = 0 ; i < intermidiate_filter_results->row_ids.size() ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] > filter_number )
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] > file->array[column_b*file->number_of_rows+intermidiate_filter_results->row_ids[i]])
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+        }
+        else {	// LESS
+            for( uint i = 0 ; i < intermidiate_filter_results->row_ids.size() ; i++ )
+                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] < filter_number )
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_filter_results->row_ids[i]] < file->array[column_b*file->number_of_rows+intermidiate_filter_results->row_ids[i]])
+                    filter_results->row_ids.push_back(intermidiate_filter_results->row_ids[i]);
+        }
+        intermidiate_results_->filter_results.erase(intermidiate_results_->filter_results.begin()+filter_index);
+        delete intermidiate_filter_results;
+    }
+
+    if( filter_results->row_ids.size() == 0 )
+        return false;
+    else {
+        intermidiate_results_->filter_results.push_back(filter_results);
+        return true;
+    }
+}
+
 void execute_query(void *argument) {
     struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)argument;
-    std::cout << execute_query_arguments->result_index << std::endl;
+    intermidiate_results *intermidiate_results_ = new intermidiate_results();
+    bool return_value;
 
+    // execute filters
+    for( uint i = 0 ; i < execute_query_arguments->sql_query_->filters.size() ; i++ ) {
+        return_value = filter(execute_query_arguments->file_array_,intermidiate_results_,execute_query_arguments->sql_query_->relations,execute_query_arguments->sql_query_->filters[i]);
+        if( return_value == false ) {
+            inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
+            delete intermidiate_results_;
+            delete execute_query_arguments->sql_query_;
+        }
+    }
+
+    std::cout << intermidiate_results_->filter_results[0]->row_ids.size() << std::endl;
+
+    // execute joins
+    for( uint i = 0 ; i < execute_query_arguments->sql_query_->joins.size() ; i++ ) {
+        return_value = join(execute_query_arguments->file_array_,intermidiate_results_,execute_query_arguments->sql_query_->relations,execute_query_arguments->sql_query_->joins[i]);
+        if( return_value == false ) {
+            inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
+            delete intermidiate_results_;
+            delete execute_query_arguments->sql_query_;
+        }
+    }
+
+    delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
 }
 

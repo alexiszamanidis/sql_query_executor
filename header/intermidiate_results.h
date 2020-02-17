@@ -16,6 +16,37 @@ struct execute_query_arguments {
     int result_index;
 };
 
+class intermidiate_filter {
+    public:
+    int64_t file_index;
+    int64_t predicate_relation;
+    std::vector<int64_t> row_ids;
+
+    intermidiate_filter(uint64_t , uint64_t );
+    ~intermidiate_filter();
+};
+
+class intermidiate_join {
+    public:
+    int64_t file_index[2];
+    int64_t predicate_relation[2];
+    std::vector<std::vector<int64_t>> row_ids;
+    int sorted_relations[2];                            // if we join 0.1=2.3, then we will have sorted_relations = |0,2|
+    int sorted_relation_columns[2];                     //                              and sorted relation columns |1,3|
+
+    intermidiate_join(uint64_t *, uint64_t *);
+    ~intermidiate_join();
+};
+
+class intermidiate_results {
+    public:
+    std::vector<intermidiate_filter *> filter_results;
+    std::vector<intermidiate_join *> join_results;
+
+    intermidiate_results();
+    ~intermidiate_results();
+};
+
 void execute_query(void *);
 void read_queries(file_array *);
 int64_t **allocate_and_initialize_2d_array(int , int , int );

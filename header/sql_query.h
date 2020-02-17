@@ -7,12 +7,12 @@ enum {
     ROW_A, COLUMN_A, OPERATOR, ROW_B, COLUMN_B
 };
 
-enum{
+enum {
     EQUAL, GREATER, LESS
 };
 
 class sql_query {
-    private:
+    public:
         std::vector<int> relations;
         std::vector<std::vector<int>> filters;
         std::vector<std::vector<int>> joins;

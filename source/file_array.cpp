@@ -47,7 +47,7 @@ struct file *file_array::initialize_file(char *file, uint64_t number_of_rows, ui
     error_handler(new_file == NULL, "malloc failed");
     new_file->name = (char *)malloc(strlen(file)*sizeof(char)+1);
     error_handler(new_file->name == NULL, "malloc failed");
-    new_file->array = (uint64_t *)malloc( number_of_rows * number_of_columns * sizeof(uint64_t *));
+    new_file->array = (int64_t *)malloc( number_of_rows * number_of_columns * sizeof(uint64_t *));
     error_handler(new_file->array == NULL, "malloc failed");
     
     strcpy(new_file->name,file);
