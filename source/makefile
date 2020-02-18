@@ -22,6 +22,9 @@ sql_query.o: sql_query.cpp
 file_array.o: file_array.cpp
 	$(CC) $(CFLAGS) -c file_array.cpp
 
+job_scheduler.o: job_scheduler.cpp
+	$(CC) $(CFLAGS) -c job_scheduler.cpp
+
 intermidiate_results.o: intermidiate_results.cpp
 	$(CC) $(CFLAGS) -c intermidiate_results.cpp
 

@@ -51,6 +51,20 @@ void relation::relation_initialize_with_dataset(char *filename) {
     fclose(dataset);
 }
 
+void relation::create_relation_from_file(struct file *file, int column){
+    this->num_tuples = file->number_of_rows;
+    this->tuples = (struct tuple *)malloc(file->number_of_rows*sizeof(struct tuple));
+    error_handler(this->tuples == NULL, "malloc failed");
+    for( uint64_t i = 0 ; i < this->num_tuples ; i++ ) {
+        this->tuples[i].row_id = i;
+        this->tuples[i].value = file->array[column*file->number_of_rows + i];
+    }
+}
+
+void relation::create_relation_from_intermidiate_results_for_join(struct file *file, intermidiate_results *intermidiate_results_, int intermidiate_result_index, int column) {
+    
+}
+
 void relation::relation_print() {
     std::cout << "Relation:" << std::endl << "RowId - Value" << std::endl;
     for( uint64_t i = 0 ; i < this->num_tuples ; i++ )
