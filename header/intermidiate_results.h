@@ -33,6 +33,7 @@ class intermidiate_result {
     int sorted_relation_columns[2];                     //                              and sorted relation columns |1,3|
 
     intermidiate_result();
+    intermidiate_result(int *, int *);
     ~intermidiate_result();
 };
 
@@ -46,6 +47,7 @@ class intermidiate_results {
 };
 
 int *search_intermidiate_results(intermidiate_results *, int64_t );
+void flip_predicate(std::vector<int> );
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool filter(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 void execute_query(void *);

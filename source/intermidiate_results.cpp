@@ -14,6 +14,13 @@ intermidiate_result::intermidiate_result() {
     this->sorted_relation_columns[1] = -1;
 }
 
+intermidiate_result::intermidiate_result(int *sorted_relations, int *sorted_relation_columns) {
+    this->sorted_relations[0] = sorted_relations[0];
+    this->sorted_relations[1] = sorted_relations[1];
+    this->sorted_relation_columns[0] = sorted_relation_columns[0];
+    this->sorted_relation_columns[1] = sorted_relation_columns[1];
+}
+
 intermidiate_result::~intermidiate_result() {}
 
 intermidiate_results::intermidiate_results() {}
@@ -39,7 +46,7 @@ intermidiate_results::~intermidiate_results() {
 int *search_intermidiate_results(intermidiate_results *intermidiate_results_, int64_t predicate_relation) {
     static int intermidiate_indexes[2] = {-1,-1};
     for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
-        for( int j = 0 ; j < (int)intermidiate_results_->results[j]->content.size() ; i++ ) {
+        for( int j = 0 ; j < (int)intermidiate_results_->results[i]->content.size() ; j++ ) {
             if( intermidiate_results_->results[i]->content[j]->predicate_relation == predicate_relation ) {
                 intermidiate_indexes[0] = i;
                 intermidiate_indexes[1] = j;
@@ -50,34 +57,49 @@ int *search_intermidiate_results(intermidiate_results *intermidiate_results_, in
     return NULL;
 }
 
-bool join(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
-    /*
-    int filter_index_A = search_intermidiate_results_filters(intermidiate_results_,predicate[ROW_A]);
-    int filter_index_B = search_intermidiate_results_filters(intermidiate_results_,predicate[ROW_B]);
-    int *intermidiate_indexes_A, *intermidiate_indexes_B;
+void flip_predicate(std::vector<int> predicate) {
+    int temp;
+    temp = predicate[RELATION_A];
+    predicate[RELATION_A] = predicate[RELATION_B];
+    predicate[RELATION_B] = temp;
+    temp = predicate[COLUMN_A];
+    predicate[COLUMN_A] = predicate[COLUMN_B];
+    predicate[COLUMN_B] = temp;
+}
 
-    if( filter_index_A == -1 )
-        intermidiate_indexes_A = search_intermidiate_results_joins(intermidiate_results_,predicate[ROW_A]);
-    if( filter_index_B == -1 )
-        intermidiate_indexes_B = search_intermidiate_results_joins(intermidiate_results_,predicate[ROW_B]);
-    */
-    return true;
-    
+bool join(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
+    int *intermidiate_result_index_A = search_intermidiate_results(intermidiate_results_,predicate[RELATION_A]);
+    int *intermidiate_result_index_B = search_intermidiate_results(intermidiate_results_,predicate[RELATION_B]);
+    bool return_value = false;
+
+    // if none of the relations are in mid results
+    if( (intermidiate_result_index_A == NULL) && (intermidiate_result_index_B == NULL) )
+        return_value = true;
+    // if only the first relation is in mid results
+    else if ( (intermidiate_result_index_A != NULL) && (intermidiate_result_index_B == NULL) )
+        return_value = true;
+    // if only the second relation is in mid results
+    else if ( (intermidiate_result_index_A == NULL) && (intermidiate_result_index_B != NULL) ){
+        flip_predicate(predicate);
+        return_value = true;
+    }
+    // if both relations are in mid results
+    else
+        return_value = true;
+
+    return return_value;
 }
 
 bool filter(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
     intermidiate_result *intermidiate_result_ = NULL;
-    intermidiate_content *filter_results = new intermidiate_content(relations[predicate[ROW_A]],predicate[ROW_A]), *intermidiate_content_results = NULL;
+    intermidiate_content *filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A]), *intermidiate_content_results = NULL;
 
-    int64_t file_index = relations[predicate[ROW_A]], predicate_relation = predicate[ROW_A];
-    int64_t column_a = predicate[COLUMN_A], filter_number = predicate[ROW_B], column_b = predicate[COLUMN_B];
+    int64_t file_index = relations[predicate[RELATION_A]], predicate_relation = predicate[RELATION_A];
+    int64_t column_a = predicate[COLUMN_A], filter_number = predicate[RELATION_B], column_b = predicate[COLUMN_B];
     int64_t operator_ = predicate[OPERATOR];
     int *filter_index = search_intermidiate_results(intermidiate_results_,predicate_relation);
 
     struct file *file = file_array->files[file_index];
-
-    if( intermidiate_results_->results.size() == 0 )
-        intermidiate_result_ = new intermidiate_result();
 
     // if the relation does not exist in intermidiate results
     if( filter_index == NULL ) {
@@ -102,8 +124,13 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
                 else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] < file->array[column_b*file->number_of_rows + i] )
                     filter_results->row_ids.push_back(i);
         }
-        intermidiate_result_->content.push_back(filter_results);
-        intermidiate_results_->results.push_back(intermidiate_result_);
+        if( intermidiate_results_->results.size() == 0 ) {
+            intermidiate_result_ = new intermidiate_result();
+            intermidiate_result_->content.push_back(filter_results);
+            intermidiate_results_->results.push_back(intermidiate_result_);
+        }
+        else
+            intermidiate_results_->results[0]->content.push_back(filter_results);
     }
     // if the relation exists in intermidiate results
     else {

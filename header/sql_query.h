@@ -4,7 +4,7 @@
 #include "./header.h"
 
 enum {
-    ROW_A, COLUMN_A, OPERATOR, ROW_B, COLUMN_B
+    RELATION_A, COLUMN_A, OPERATOR, RELATION_B, COLUMN_B
 };
 
 enum {
