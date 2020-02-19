@@ -14,9 +14,9 @@ enum {
 class sql_query {
     public:
         std::vector<int> relations;
-        std::vector<std::vector<int>> filters;
-        std::vector<std::vector<int>> joins;
-        std::vector<std::vector<int>> projections;
+        std::vector<std::vector<int> > filters;
+        std::vector<std::vector<int> > joins;
+        std::vector<std::vector<int> > projections;
     public:
         sql_query(char *);
         ~sql_query();

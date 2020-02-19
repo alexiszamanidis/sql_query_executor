@@ -92,11 +92,11 @@ bool join(file_array *file_array, intermidiate_results *intermidiate_results_, s
 
 relation *create_relation_from_intermidiate_results_for_join(struct file *file, intermidiate_results *intermidiate_results_, int *intermidiate_result_index, int column) {
     intermidiate_content *intermidiate_content_results = intermidiate_results_->results[intermidiate_result_index[0]]->content[intermidiate_result_index[1]];
-    relation *R = new relation(file->number_of_rows);
+    relation *R = new relation(intermidiate_content_results->row_ids.size());
 
-    for( uint64_t i = 0 ; i < file->number_of_rows ; i++ ) {
+    for( uint64_t i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ ) {
         R->tuples[i].row_id = i;
-        R->tuples[i].value = file->array[column*file->number_of_rows + i];
+        R->tuples[i].value = file->array[column*file->number_of_rows+intermidiate_content_results->row_ids[i]];
     }
 
     return R;
@@ -213,7 +213,7 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
                 else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] < file->array[column_b*file->number_of_rows+intermidiate_content_results->row_ids[i]])
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
         }
-        
+
         intermidiate_results_->results[filter_index[0]]->content.erase(intermidiate_results_->results[filter_index[0]]->content.begin()+filter_index[1]);
         delete intermidiate_content_results;
         intermidiate_results_->results[filter_index[0]]->content.push_back(filter_results);
@@ -274,7 +274,7 @@ void read_queries(file_array *file_array) {
                 stop = true;
                 break;
             }
-            
+
             sql_query *sql_query_ = new sql_query(query);
 
             struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
@@ -298,15 +298,15 @@ void read_queries(file_array *file_array) {
 
 
 int64_t **allocate_and_initialize_2d_array(int rows, int columns, int initialize_number) {
-    int64_t **array = (int64_t **)malloc(rows*sizeof(int64_t *)); 
+    int64_t **array = (int64_t **)malloc(rows*sizeof(int64_t *));
     error_handler(array == NULL,"malloc failed");
     for( int i=0 ; i < rows ; i++ ) {
         array[i] = (int64_t *)malloc(columns*sizeof(int64_t));
         error_handler(array[i] == NULL,"malloc failed");
     }
 
-    for ( int i = 0 ; i <  rows ; i++ ) 
-        for ( int j = 0 ; j < columns ; j++ ) 
+    for ( int i = 0 ; i <  rows ; i++ )
+        for ( int j = 0 ; j < columns ; j++ )
             array[i][j] = initialize_number;
 
     return array;
