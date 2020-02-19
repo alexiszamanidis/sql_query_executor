@@ -2,9 +2,9 @@
 #define relation_h_
 
 #include "./header.h"
-#include "../header/results.h"
-#include "../header/file_array.h"
-#include "../header/intermidiate_results.h"
+#include "./results.h"
+#include "./file_array.h"
+#include "./intermidiate_results.h"
 
 #define BUCKET_SIZE 256
 #define CACHE_SIZE 64*1024
@@ -27,15 +27,15 @@ struct sort_node {
 };
 
 class relation {
-    private:
+    public:
         tuple *tuples;
         uint64_t num_tuples;
     public:
         relation();
+        relation(int );
         ~relation();
         void relation_initialize_random(int);
         void create_relation_from_file(struct file *, int );
-        void create_relation_from_intermidiate_results_for_join(struct file *, intermidiate_results *, int , int );
         void relation_print();
         void relation_initialize_with_dataset(char *);
         unsigned char binary_mask(uint64_t , int );

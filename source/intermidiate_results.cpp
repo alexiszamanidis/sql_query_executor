@@ -77,17 +77,73 @@ bool join(file_array *file_array, intermidiate_results *intermidiate_results_, s
         return_value = true;
     // if only the first relation is in mid results
     else if ( (intermidiate_result_index_A != NULL) && (intermidiate_result_index_B == NULL) )
-        return_value = true;
+        return_value = only_one_relation_in_mid_results(file_array,intermidiate_results_,predicate,relations,intermidiate_result_index_A);
     // if only the second relation is in mid results
     else if ( (intermidiate_result_index_A == NULL) && (intermidiate_result_index_B != NULL) ){
         flip_predicate(predicate);
-        return_value = true;
+        return_value = only_one_relation_in_mid_results(file_array,intermidiate_results_,predicate,relations,intermidiate_result_index_B);;
     }
     // if both relations are in mid results
     else
         return_value = true;
 
     return return_value;
+}
+
+relation *create_relation_from_intermidiate_results_for_join(struct file *file, intermidiate_results *intermidiate_results_, int *intermidiate_result_index, int column) {
+    intermidiate_content *intermidiate_content_results = intermidiate_results_->results[intermidiate_result_index[0]]->content[intermidiate_result_index[1]];
+    relation *R = new relation(file->number_of_rows);
+
+    for( uint64_t i = 0 ; i < file->number_of_rows ; i++ ) {
+        R->tuples[i].row_id = i;
+        R->tuples[i].value = file->array[column*file->number_of_rows + i];
+    }
+
+    return R;
+}
+
+bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> predicate, std::vector<int> relations, int *intermidiate_result_index_A) {
+    intermidiate_content *new_intermidiate_result_a = NULL, *new_intermidiate_result_b = NULL;
+    relation *R = NULL, *S = new relation();
+    int64_t file_index_a = relations[predicate[RELATION_A]], file_index_b = relations[predicate[RELATION_B]];
+    int64_t predicate_relation_a = predicate[RELATION_A], predicate_relation_b = predicate[RELATION_B];
+    int64_t column_a = predicate[COLUMN_A], column_b = predicate[COLUMN_B];
+    struct file *file_a = file_array->files[file_index_a], *file_b = file_array->files[file_index_b];
+    results *results_ = new results();
+
+    // initialize structures for join and do it
+    R = create_relation_from_intermidiate_results_for_join(file_a,intermidiate_results_,intermidiate_result_index_A,column_a);
+    S->create_relation_from_file(file_b, column_b);
+    parallel_join(R,S,results_);
+
+    // if there was no results then free structures and return false
+    if( results_->total_size == 0 ) {
+        delete R;
+        delete S;
+        delete results_;
+        return false;
+    }
+//    printf("alex\n");
+    intermidiate_content *intermidiate_content_ = intermidiate_results_->results[intermidiate_result_index_A[0]]->content[intermidiate_result_index_A[1]];
+
+    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
+    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b);
+
+    struct bucket *temp_bucket = results_->head;
+    for( int i = 0 ; i < results_->number_of_buckets ; i++) {
+        for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
+            int index_a = temp_bucket->tuples[j].row_key_1;
+            int value = intermidiate_content_->row_ids[index_a];
+            new_intermidiate_result_a->row_ids.push_back(value);
+            new_intermidiate_result_b->row_ids.push_back(temp_bucket->tuples[j].row_key_2);
+        }
+        temp_bucket = temp_bucket->next_bucket;
+    }
+
+    delete R;
+    delete S;
+    delete results_;
+    return true;
 }
 
 bool filter(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {

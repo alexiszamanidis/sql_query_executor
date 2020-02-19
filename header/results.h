@@ -18,7 +18,7 @@ struct bucket {
 };
 
 class results {
-    private:
+    public:
         struct bucket *head;
         struct bucket *tail;
         int64_t number_of_buckets;

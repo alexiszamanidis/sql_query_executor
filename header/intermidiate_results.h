@@ -5,6 +5,7 @@
 #include "./file_array.h"
 #include "./sql_query.h"
 #include "./job_scheduler.h"
+#include "./relation.h"
 
 #define RESULTS_ROWS 15
 #define RESULTS_COLUMNS 5
@@ -48,6 +49,7 @@ class intermidiate_results {
 
 int *search_intermidiate_results(intermidiate_results *, int64_t );
 void flip_predicate(std::vector<int> );
+bool only_one_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *);
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool filter(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 void execute_query(void *);

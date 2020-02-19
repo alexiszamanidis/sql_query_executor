@@ -5,6 +5,12 @@ relation::relation() {
     this->tuples = NULL;
 }
 
+relation::relation(int number_of_tuples) {
+    this->num_tuples = number_of_tuples;
+    this->tuples = (struct tuple *)malloc(number_of_tuples*sizeof(struct tuple));
+    error_handler(this->tuples == NULL, "malloc failed");
+}
+
 relation::~relation() {
     free(this->tuples);
 }
@@ -59,10 +65,6 @@ void relation::create_relation_from_file(struct file *file, int column){
         this->tuples[i].row_id = i;
         this->tuples[i].value = file->array[column*file->number_of_rows + i];
     }
-}
-
-void relation::create_relation_from_intermidiate_results_for_join(struct file *file, intermidiate_results *intermidiate_results_, int intermidiate_result_index, int column) {
-    
 }
 
 void relation::relation_print() {
@@ -242,13 +244,13 @@ void relation::get_range(uint64_t start, uint64_t *end) {
 
 void parallel_join(relation *R, relation *S, results *results) {
     uint64_t index_R_start = 0, index_S_start = 0, index_R_end = 0, index_S_end = 0, i, j;
-    while( ( index_R_start != R->get_number_of_tuples() ) && ( index_S_start != S->get_number_of_tuples() ) ){
+    while( ( index_R_start != R->num_tuples) && ( index_S_start != S->num_tuples ) ){
         // calculate ranges
         R->get_range(index_R_start,&index_R_end);
         S->get_range(index_S_start,&index_S_end);
 
         // if the value is the same then do a double loop and insert all the row id into the list
-        if( R->get_tuple_value(index_R_start) == S->get_tuple_value(index_S_start) ) {
+        if( R->tuples[index_R_start].row_id == S->tuples[index_S_start].row_id ) {
             for( i = index_R_start ; i <= index_R_end ; i++ )
                 for( j = index_S_start ; j <= index_S_end ; j++ )
                     results->insert_tuple(R->get_tuple_row_id(i), S->get_tuple_row_id(j));
@@ -257,7 +259,7 @@ void parallel_join(relation *R, relation *S, results *results) {
             index_R_end = index_R_start;
         }
         // if R's value is less than S's value then move R pointer
-        else if( R->get_tuple_value(index_R_start) < S->get_tuple_value(index_S_start) ) {
+        else if( R->tuples[index_R_start].row_id < S->tuples[index_S_start].row_id ) {
             index_R_start = index_R_end + 1;
             index_R_end = index_R_start;
         }
