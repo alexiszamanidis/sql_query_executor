@@ -123,7 +123,7 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
         delete results_;
         return false;
     }
-//    printf("alex\n");
+
     intermidiate_content *intermidiate_content_ = intermidiate_results_->results[intermidiate_result_index_A[0]]->content[intermidiate_result_index_A[1]];
 
     new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
@@ -139,6 +139,36 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
         }
         temp_bucket = temp_bucket->next_bucket;
     }
+
+    intermidiate_result *intermidiate_result_ = intermidiate_results_->results[intermidiate_result_index_A[0]];
+    intermidiate_content *new_intermidiate_result_c = NULL;
+    for( int i = 0 ; i < (int)intermidiate_result_->content.size() ; i++ ) {
+      intermidiate_content *temp_intermidiate_content_ = intermidiate_result_->content[i];
+      if( i == intermidiate_result_index_A[1] )
+        continue;
+      else {
+        struct bucket *temp_bucket = results_->head;
+        struct intermidiate_result new_intermidiate_result;
+        new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
+        for( int k = 0 ; k < results_->number_of_buckets ; k++) {
+            for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
+                int index = temp_bucket->tuples[j].row_key_1;
+                int value = new_intermidiate_result_a->row_ids[index];
+                new_intermidiate_result_c->row_ids.push_back(value);
+            }
+            temp_bucket = temp_bucket->next_bucket;
+        }
+        intermidiate_result_->content.erase(intermidiate_result_->content.begin()+i);
+        delete temp_intermidiate_content_;
+        intermidiate_result_->content.insert(intermidiate_result_->content.begin()+i, new_intermidiate_result_c);
+      }
+    }
+
+    new_intermidiate_result_c = intermidiate_result_->content[intermidiate_result_index_A[0]];
+    intermidiate_result_->content.erase(intermidiate_result_->content.begin()+intermidiate_result_index_A[1]);
+    delete new_intermidiate_result_c;
+    intermidiate_result_->content.push_back(new_intermidiate_result_a);
+    intermidiate_result_->content.push_back(new_intermidiate_result_b);
 
     delete R;
     delete S;
@@ -251,6 +281,8 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
         }
     }
+
+    intermidiate_results_->print_intermidiate_results();
 
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
