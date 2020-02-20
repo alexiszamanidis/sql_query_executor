@@ -34,8 +34,9 @@ class intermidiate_result {
     int sorted_relation_columns[2];                     //                              and sorted relation columns |1,3|
 
     intermidiate_result();
-    intermidiate_result(int *, int *);
+    intermidiate_result(std::vector<int> );
     ~intermidiate_result();
+    void inform_intermidiate_result_sort_fields(std::vector<int> );
 };
 
 class intermidiate_results {

@@ -14,11 +14,18 @@ intermidiate_result::intermidiate_result() {
     this->sorted_relation_columns[1] = -1;
 }
 
-intermidiate_result::intermidiate_result(int *sorted_relations, int *sorted_relation_columns) {
-    this->sorted_relations[0] = sorted_relations[0];
-    this->sorted_relations[1] = sorted_relations[1];
-    this->sorted_relation_columns[0] = sorted_relation_columns[0];
-    this->sorted_relation_columns[1] = sorted_relation_columns[1];
+intermidiate_result::intermidiate_result(std::vector<int> predicate) {
+    this->sorted_relations[0] = predicate[RELATION_A];
+    this->sorted_relations[1] = predicate[RELATION_B];
+    this->sorted_relation_columns[0] = predicate[COLUMN_A];
+    this->sorted_relation_columns[1] = predicate[COLUMN_B];
+}
+
+void intermidiate_result::inform_intermidiate_result_sort_fields(std::vector<int> predicate) {
+    this->sorted_relations[0] = predicate[RELATION_A];
+    this->sorted_relations[1] = predicate[RELATION_B];
+    this->sorted_relation_columns[0] = predicate[COLUMN_A];
+    this->sorted_relation_columns[1] = predicate[COLUMN_B];
 }
 
 intermidiate_result::~intermidiate_result() {}
@@ -133,6 +140,53 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     return results_;
 }
 
+bool none_relation_in_mid_results(struct file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> predicate, std::vector<int> relations) {
+    intermidiate_result *intermidiate_result_ = NULL;
+    intermidiate_content *new_intermidiate_result_a = NULL, *new_intermidiate_result_b = NULL;
+    relation *R = new relation(), *S = new relation();
+    int64_t file_index_a = relations[predicate[RELATION_A]], file_index_b = relations[predicate[RELATION_B]];
+    int64_t predicate_relation_a = predicate[RELATION_A], predicate_relation_b = predicate[RELATION_B];
+    int64_t column_a = predicate[COLUMN_A], column_b = predicate[COLUMN_B];
+    struct file *file_a = file_array->files[file_index_a], *file_b = file_array->files[file_index_b];
+    results *results_ = NULL;
+
+    // initialize structures for join and do it
+    R->create_relation_from_file(file_a, column_a);
+    S->create_relation_from_file(file_b, column_b);
+    results_ = sort_join_calculation(R,S,intermidiate_results_,predicate);
+
+    // if there was no results then free structures and return false
+    if( results_->total_size == 0 ) {
+        delete R;
+        delete S;
+        delete results_;
+        return false;
+    }
+
+    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
+    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b);
+
+    struct bucket *temp_bucket = results_->head;
+    for( int i = 0 ; i < results_->number_of_buckets ; i++) {
+        for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
+            new_intermidiate_result_a->row_ids.push_back(temp_bucket->tuples[j].row_key_1);
+            new_intermidiate_result_b->row_ids.push_back(temp_bucket->tuples[j].row_key_2);
+        }
+        temp_bucket = temp_bucket->next_bucket;
+    }
+
+    intermidiate_result_ = new intermidiate_result(predicate);
+    intermidiate_result_->content.push_back(new_intermidiate_result_a);
+    intermidiate_result_->content.push_back(new_intermidiate_result_b);
+    intermidiate_results_->results.push_back(intermidiate_result_);
+
+    // free structures that were used for the parallel join
+    delete R;
+    delete S;
+    delete results_;
+    return true;
+}
+
 bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> predicate, std::vector<int> relations, int *intermidiate_result_index_A) {
     intermidiate_content *new_intermidiate_result_a = NULL, *new_intermidiate_result_b = NULL;
     relation *R = NULL, *S = new relation();
@@ -200,6 +254,8 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
     delete new_intermidiate_result_c;
     intermidiate_result_->content.push_back(new_intermidiate_result_a);
     intermidiate_result_->content.push_back(new_intermidiate_result_b);
+
+    intermidiate_result_->inform_intermidiate_result_sort_fields(predicate);
 
     delete R;
     delete S;
@@ -339,6 +395,7 @@ void execute_query(void *argument) {
 
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
+    free(execute_query_arguments);
 }
 
 void read_queries(file_array *file_array) {
@@ -362,10 +419,15 @@ void read_queries(file_array *file_array) {
 
             sql_query *sql_query_ = new sql_query(query);
 
+        //    struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
+        //    error_handler(execute_query_arguments == NULL,"malloc failed");
+        //    *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
+        //    job_scheduler_->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
+
             struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
             error_handler(execute_query_arguments == NULL,"malloc failed");
             *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
-            job_scheduler_->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
+            execute_query(execute_query_arguments);
 
             result_index++;
         }
