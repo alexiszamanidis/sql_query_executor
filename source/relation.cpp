@@ -158,8 +158,7 @@ void relation::fill_new_relation(relation *R, uint64_t *prefix_sum, uint64_t sta
 }
 
 void relation::sort_iterative() {
-    relation R_new;
-    R_new.relation_initialize_random(this->num_tuples);
+    relation R_new(this->num_tuples);
     uint64_t start = 0, end = this->num_tuples, *histogram, *prefix_sum;;
     int byte = 1;
     std::queue<struct sort_node> sort_data_list;
@@ -244,13 +243,13 @@ void relation::get_range(uint64_t start, uint64_t *end) {
 
 void parallel_join(relation *R, relation *S, results *results) {
     uint64_t index_R_start = 0, index_S_start = 0, index_R_end = 0, index_S_end = 0, i, j;
-    while( ( index_R_start != R->num_tuples) && ( index_S_start != S->num_tuples ) ){
+    while( ( index_R_start != R->num_tuples ) && ( index_S_start != S->num_tuples ) ){
         // calculate ranges
         R->get_range(index_R_start,&index_R_end);
         S->get_range(index_S_start,&index_S_end);
 
         // if the value is the same then do a double loop and insert all the row id into the list
-        if( R->tuples[index_R_start].row_id == S->tuples[index_S_start].row_id ) {
+        if( R->tuples[index_R_start].value == S->tuples[index_S_start].value ) {
             for( i = index_R_start ; i <= index_R_end ; i++ )
                 for( j = index_S_start ; j <= index_S_end ; j++ )
                     results->insert_tuple(R->get_tuple_row_id(i), S->get_tuple_row_id(j));
@@ -259,7 +258,7 @@ void parallel_join(relation *R, relation *S, results *results) {
             index_R_end = index_R_start;
         }
         // if R's value is less than S's value then move R pointer
-        else if( R->tuples[index_R_start].row_id < S->tuples[index_S_start].row_id ) {
+        else if( R->tuples[index_R_start].value < S->tuples[index_S_start].value ) {
             index_R_start = index_R_end + 1;
             index_R_end = index_R_start;
         }
@@ -269,4 +268,4 @@ void parallel_join(relation *R, relation *S, results *results) {
             index_S_end = index_S_start;
         }
     }
-}
+} 
