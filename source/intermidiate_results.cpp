@@ -1,6 +1,6 @@
 #include "../header/intermidiate_results.h"
 
-intermidiate_content::intermidiate_content(uint64_t file_index, uint64_t predicate_relation) {
+intermidiate_content::intermidiate_content(int64_t file_index, int64_t predicate_relation) {
     this->file_index = file_index;
     this->predicate_relation = predicate_relation;
 }
@@ -64,7 +64,7 @@ int *search_intermidiate_results(intermidiate_results *intermidiate_results_, in
     return NULL;
 }
 
-void flip_predicate(std::vector<int> predicate) {
+void flip_predicate(std::vector<int> &predicate) {
     int temp;
     temp = predicate[RELATION_A];
     predicate[RELATION_A] = predicate[RELATION_B];
@@ -249,7 +249,7 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
         }
     }
 
-    new_intermidiate_result_c = intermidiate_result_->content[intermidiate_result_index_A[0]];
+    new_intermidiate_result_c = intermidiate_result_->content[intermidiate_result_index_A[1]];
     intermidiate_result_->content.erase(intermidiate_result_->content.begin()+intermidiate_result_index_A[1]);
     delete new_intermidiate_result_c;
     intermidiate_result_->content.push_back(new_intermidiate_result_a);
@@ -344,10 +344,10 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
 
 void projection_sum_results(file_array *file_array, intermidiate_results *intermidiate_results_, sql_query *sql_query_, int64_t **results, int result_index) {
   for( uint i = 0 ; i < sql_query_->projections.size() ; i++ ) {
-    uint64_t sum = 0;
-    uint64_t predicate_relation = sql_query_->projections[i][0];
-    uint64_t file_index = sql_query_->relations[predicate_relation];
-    uint64_t column = sql_query_->projections[i][1];
+    int64_t sum = 0;
+    int64_t predicate_relation = sql_query_->projections[i][0];
+    int64_t file_index = sql_query_->relations[predicate_relation];
+    int64_t column = sql_query_->projections[i][1];
     int *intermidiate_result_index = search_intermidiate_results(intermidiate_results_,predicate_relation);
     if( intermidiate_result_index == NULL ) {
       std::cout << "Relation " << file_index << " does not exists in intermidiate results" << std::endl;
@@ -374,6 +374,7 @@ void execute_query(void *argument) {
             inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
             delete intermidiate_results_;
             delete execute_query_arguments->sql_query_;
+            return;
         }
     }
 
@@ -386,6 +387,7 @@ void execute_query(void *argument) {
             inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
             delete intermidiate_results_;
             delete execute_query_arguments->sql_query_;
+            return;
         }
     }
 

@@ -23,7 +23,7 @@ class intermidiate_content {
     int64_t predicate_relation;
     std::vector<int64_t> row_ids;
 
-    intermidiate_content(uint64_t , uint64_t );
+    intermidiate_content(int64_t , int64_t );
     ~intermidiate_content();
 };
 
@@ -49,7 +49,7 @@ class intermidiate_results {
 };
 
 int *search_intermidiate_results(intermidiate_results *, int64_t );
-void flip_predicate(std::vector<int> );
+void flip_predicate(std::vector<int> &);
 bool only_one_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *);
 void synchronize_intermidiate_results(intermidiate_result *, results *results, int intermidiate_result_index);
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
