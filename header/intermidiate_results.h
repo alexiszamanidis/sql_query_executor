@@ -50,8 +50,11 @@ class intermidiate_results {
 
 int *search_intermidiate_results(intermidiate_results *, int64_t );
 void flip_predicate(std::vector<int> &);
+bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
+bool none_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
+bool both_relations_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *, int *);
 bool only_one_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *);
-void synchronize_intermidiate_results(intermidiate_result *, results *results, int intermidiate_result_index);
+void synchronize_intermidiate_results(intermidiate_result *, results *, int );
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool filter(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 void execute_query(void *);
