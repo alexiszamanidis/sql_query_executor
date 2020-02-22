@@ -28,23 +28,25 @@ void intermidiate_result::inform_intermidiate_result_sort_fields(std::vector<int
     this->sorted_relation_columns[1] = predicate[COLUMN_B];
 }
 
-intermidiate_result::~intermidiate_result() {}
+intermidiate_result::~intermidiate_result() {
+    intermidiate_content *intermidiate_content_ = NULL;
+    int content_size = this->content.size();
+
+    for( int j = 0 ; j < content_size ; j++ ) {
+        intermidiate_content_ = this->content[0];
+        this->content.erase(this->content.begin());
+        delete intermidiate_content_;
+    }
+}
 
 intermidiate_results::intermidiate_results() {}
 
 intermidiate_results::~intermidiate_results() {
     intermidiate_result *intermidiate_result_ = NULL;
-    intermidiate_content *intermidiate_content_ = NULL;
-    int result_size = (int)this->results.size(), content_size;
+    int result_size = (int)this->results.size();
 
     for( int i = 0 ; i < result_size ; i++ ) {
         intermidiate_result_ = this->results[0];
-        content_size = this->results[0]->content.size();
-        for( int j = 0 ; j < content_size ; j++ ) {
-            intermidiate_content_ = this->results[0]->content[0];
-            this->results[0]->content.erase(this->results[0]->content.begin());
-            delete intermidiate_content_;
-        }
         this->results.erase(this->results.begin());
         delete intermidiate_result_;
     }
@@ -208,12 +210,8 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
     R = create_relation_from_intermidiate_results_for_join(file_a,intermidiate_results_,intermidiate_result_index_a,column_a);
     S = create_relation_from_intermidiate_results_for_join(file_b,intermidiate_results_,intermidiate_result_index_b,column_b);
 
-    std::cout << intermidiate_result_index_a[0] << " " << intermidiate_result_index_a[1] << std::endl;
-    std::cout << intermidiate_result_index_b[0] << " " << intermidiate_result_index_b[1] << std::endl;
-
     // if they are already joined
     if( intermidiate_result_index_a[0] == intermidiate_result_index_b[0] ) {
-        std::cout << "alex " << std::endl;
         std::vector<int64_t> indexes;
         // calculate the indexes when R.value = S.value
         for( uint i = 0 ; i < R->num_tuples ; i++ )
@@ -265,7 +263,6 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
         }
     }
     else {
-        std::cout << "alex_2" << std::endl;
         results_ = sort_join_calculation(R,S,intermidiate_results_,predicate);
         
         // if there was no results then free structures and return false
@@ -276,9 +273,63 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
             return false;
         }
 
-        delete results_;
+        intermidiate_result *new_intermidiate_result = new intermidiate_result(predicate);
+
+        intermidiate_result *intermidiate_result_a = intermidiate_results_->results[intermidiate_result_index_a[0]];
+
+        // synchronize old joined relations from first intermidiate result
+        for( int i = 0 ; i < (int)intermidiate_result_a->content.size() ; i++ ) {
+            intermidiate_content *temp_intermidiate_content_ = intermidiate_result_a->content[i];
+            struct bucket *temp_bucket = results_->head;
+            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
+            for( int k = 0 ; k < results_->number_of_buckets ; k++) {
+                for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
+                    int index = temp_bucket->tuples[j].row_key_1;
+                    int value = temp_intermidiate_content_->row_ids[index];
+                    new_intermidiate_result_c->row_ids.push_back(value);
+                }
+                temp_bucket = temp_bucket->next_bucket;
+            }
+            new_intermidiate_result->content.push_back(new_intermidiate_result_c);
+        }
+
+        intermidiate_result *intermidiate_result_b = intermidiate_results_->results[intermidiate_result_index_b[0]];
+
+        // synchronize old joined relations from second intermidiate result
+        for( int i = 0 ; i < (int)intermidiate_result_b->content.size() ; i++ ) {
+            intermidiate_content *temp_intermidiate_content_ = intermidiate_result_b->content[i];
+            struct bucket *temp_bucket = results_->head;
+            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
+            for( int k = 0 ; k < results_->number_of_buckets ; k++) {
+                for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
+                    int index = temp_bucket->tuples[j].row_key_2;
+                    int value = temp_intermidiate_content_->row_ids[index];
+                    new_intermidiate_result_c->row_ids.push_back(value);
+                }
+                temp_bucket = temp_bucket->next_bucket;
+            }
+            new_intermidiate_result->content.push_back(new_intermidiate_result_c);
+        }
+
+        intermidiate_results_->results.push_back(new_intermidiate_result);
+
+        // remove old intermidiate results
+        if( intermidiate_result_index_a[0] > intermidiate_result_index_b[0] ) {
+            intermidiate_results_->results.erase(intermidiate_results_->results.begin()+intermidiate_result_index_a[0]);
+            delete intermidiate_result_a;
+            intermidiate_results_->results.erase(intermidiate_results_->results.begin()+intermidiate_result_index_b[0]);
+            delete intermidiate_result_b;
+        }
+        else {
+            intermidiate_results_->results.erase(intermidiate_results_->results.begin()+intermidiate_result_index_b[0]);
+            delete intermidiate_result_b;
+            intermidiate_results_->results.erase(intermidiate_results_->results.begin()+intermidiate_result_index_a[0]);
+            delete intermidiate_result_a;
+        }
     }
 
+    if( results_ != NULL )
+        delete results_;
     delete R;
     delete S;
     return true;
@@ -330,7 +381,6 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
             continue;
         else {
             struct bucket *temp_bucket = results_->head;
-            struct intermidiate_result new_intermidiate_result;
             new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
             for( int k = 0 ; k < results_->number_of_buckets ; k++) {
                 for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
@@ -475,7 +525,7 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
-        intermidiate_results_->print_intermidiate_results();
+    //    intermidiate_results_->print_intermidiate_results();
     }
 
     // execute joins
@@ -487,7 +537,7 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
-        intermidiate_results_->print_intermidiate_results();
+    //    intermidiate_results_->print_intermidiate_results();
     }
 
     projection_sum_results(execute_query_arguments->file_array_, intermidiate_results_, execute_query_arguments->sql_query_, execute_query_arguments->results, execute_query_arguments->result_index);
