@@ -208,12 +208,12 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
     R = create_relation_from_intermidiate_results_for_join(file_a,intermidiate_results_,intermidiate_result_index_a,column_a);
     S = create_relation_from_intermidiate_results_for_join(file_b,intermidiate_results_,intermidiate_result_index_b,column_b);
 
-//    std::cout << intermidiate_result_index_a[0] << " " << intermidiate_result_index_a[1] << std::endl;
-//    std::cout << intermidiate_result_index_b[0] << " " << intermidiate_result_index_b[1] << std::endl;
+    std::cout << intermidiate_result_index_a[0] << " " << intermidiate_result_index_a[1] << std::endl;
+    std::cout << intermidiate_result_index_b[0] << " " << intermidiate_result_index_b[1] << std::endl;
 
     // if they are already joined
     if( intermidiate_result_index_a[0] == intermidiate_result_index_b[0] ) {
-//        std::cout << "alex " << std::endl;
+        std::cout << "alex " << std::endl;
         std::vector<int64_t> indexes;
         // calculate the indexes when R.value = S.value
         for( uint i = 0 ; i < R->num_tuples ; i++ )
@@ -264,10 +264,23 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
             }
         }
     }
+    else {
+        std::cout << "alex_2" << std::endl;
+        results_ = sort_join_calculation(R,S,intermidiate_results_,predicate);
+        
+        // if there was no results then free structures and return false
+        if( results_->total_size == 0 ) {
+            delete R;
+            delete S;
+            delete results_;
+            return false;
+        }
+
+        delete results_;
+    }
 
     delete R;
     delete S;
-
     return true;
 }
 
@@ -381,13 +394,9 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
                 else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] < file->array[column_b*file->number_of_rows + i] )
                     filter_results->row_ids.push_back(i);
         }
-        if( intermidiate_results_->results.size() == 0 ) {
-            intermidiate_result_ = new intermidiate_result();
-            intermidiate_result_->content.push_back(filter_results);
-            intermidiate_results_->results.push_back(intermidiate_result_);
-        }
-        else
-            intermidiate_results_->results[0]->content.push_back(filter_results);
+        intermidiate_result_ = new intermidiate_result();
+        intermidiate_result_->content.push_back(filter_results);
+        intermidiate_results_->results.push_back(intermidiate_result_);
     }
     // if the relation exists in intermidiate results
     else {
@@ -466,9 +475,8 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
+        intermidiate_results_->print_intermidiate_results();
     }
-
-//    intermidiate_results_->print_intermidiate_results();
 
     // execute joins
     for( uint i = 0 ; i < execute_query_arguments->sql_query_->joins.size() ; i++ ) {
@@ -479,10 +487,8 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
-    //    intermidiate_results_->print_intermidiate_results();
+        intermidiate_results_->print_intermidiate_results();
     }
-
-//    intermidiate_results_->print_intermidiate_results();
 
     projection_sum_results(execute_query_arguments->file_array_, intermidiate_results_, execute_query_arguments->sql_query_, execute_query_arguments->results, execute_query_arguments->result_index);
 
