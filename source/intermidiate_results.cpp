@@ -1,8 +1,9 @@
 #include "../header/intermidiate_results.h"
 
-intermidiate_content::intermidiate_content(int64_t file_index, int64_t predicate_relation) {
+intermidiate_content::intermidiate_content(int64_t file_index, int64_t predicate_relation, int reserve_size) {
     this->file_index = file_index;
     this->predicate_relation = predicate_relation;
+    this->row_ids.reserve(reserve_size);
 }
 
 intermidiate_content::~intermidiate_content() {}
@@ -15,6 +16,7 @@ intermidiate_result::intermidiate_result() {
 }
 
 intermidiate_result::intermidiate_result(std::vector<int> predicate) {
+    this->content.reserve(RESERVE_SIZE);
     this->sorted_relations[0] = predicate[RELATION_A];
     this->sorted_relations[1] = predicate[RELATION_B];
     this->sorted_relation_columns[0] = predicate[COLUMN_A];
@@ -22,6 +24,7 @@ intermidiate_result::intermidiate_result(std::vector<int> predicate) {
 }
 
 void intermidiate_result::inform_intermidiate_result_sort_fields(std::vector<int> predicate) {
+    this->content.reserve(RESERVE_SIZE);
     this->sorted_relations[0] = predicate[RELATION_A];
     this->sorted_relations[1] = predicate[RELATION_B];
     this->sorted_relation_columns[0] = predicate[COLUMN_A];
@@ -39,7 +42,9 @@ intermidiate_result::~intermidiate_result() {
     }
 }
 
-intermidiate_results::intermidiate_results() {}
+intermidiate_results::intermidiate_results() {
+    this->results.reserve(RESERVE_SIZE);
+}
 
 intermidiate_results::~intermidiate_results() {
     intermidiate_result *intermidiate_result_ = NULL;
@@ -177,10 +182,8 @@ bool none_relation_in_mid_results(struct file_array *file_array, intermidiate_re
         return false;
     }
 
-    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
-    new_intermidiate_result_a->row_ids.reserve(results_->total_size);
-    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b);
-    new_intermidiate_result_b->row_ids.reserve(results_->total_size);
+    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a,results_->total_size);
+    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b,results_->total_size);
 
     struct bucket *temp_bucket = results_->head;
     for( int i = 0 ; i < results_->number_of_buckets ; i++) {
@@ -232,10 +235,8 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
             return false;
         }
 
-        new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
-        new_intermidiate_result_a->row_ids.reserve(indexes.size());
-        new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b);
-        new_intermidiate_result_b->row_ids.reserve(indexes.size());
+        new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a,indexes.size());
+        new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b,indexes.size());
 
         for( uint i = 0 ; i < indexes.size() ; i++ ) {
             int index = indexes[i];
@@ -260,8 +261,7 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
             if( (i == intermidiate_result_index_a[1]) || (i == intermidiate_result_index_b[1]) )
                 continue;
             else {
-                intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
-                new_intermidiate_result_c->row_ids.reserve(indexes.size());
+                intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation,indexes.size());
                 for( uint j = 0 ; j < indexes.size() ; j++ ) {
                     int index = indexes[j];
                     int value = temp_intermidiate_content_->row_ids[index];
@@ -292,8 +292,7 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
         for( int i = 0 ; i < (int)intermidiate_result_a->content.size() ; i++ ) {
             intermidiate_content *temp_intermidiate_content_ = intermidiate_result_a->content[i];
             struct bucket *temp_bucket = results_->head;
-            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
-            new_intermidiate_result_c->row_ids.reserve(results_->total_size);
+            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation,results_->total_size);
             for( int k = 0 ; k < results_->number_of_buckets ; k++) {
                 for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
                     int index = temp_bucket->tuples[j].row_key_1;
@@ -311,8 +310,7 @@ bool both_relations_in_mid_results(struct file_array *file_array, intermidiate_r
         for( int i = 0 ; i < (int)intermidiate_result_b->content.size() ; i++ ) {
             intermidiate_content *temp_intermidiate_content_ = intermidiate_result_b->content[i];
             struct bucket *temp_bucket = results_->head;
-            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
-            new_intermidiate_result_c->row_ids.reserve(results_->total_size);
+            intermidiate_content *new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation,results_->total_size);
             for( int k = 0 ; k < results_->number_of_buckets ; k++) {
                 for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
                     int index = temp_bucket->tuples[j].row_key_2;
@@ -372,10 +370,8 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
 
     intermidiate_content *intermidiate_content_ = intermidiate_results_->results[intermidiate_result_index_a[0]]->content[intermidiate_result_index_a[1]];
 
-    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a);
-    new_intermidiate_result_a->row_ids.reserve(results_->total_size);
-    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b);
-    new_intermidiate_result_b->row_ids.reserve(results_->total_size);
+    new_intermidiate_result_a = new intermidiate_content(file_index_a,predicate_relation_a,results_->total_size);
+    new_intermidiate_result_b = new intermidiate_content(file_index_b,predicate_relation_b,results_->total_size);
 
     struct bucket *temp_bucket = results_->head;
     for( int i = 0 ; i < results_->number_of_buckets ; i++) {
@@ -396,8 +392,7 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
             continue;
         else {
             struct bucket *temp_bucket = results_->head;
-            new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation);
-            new_intermidiate_result_c->row_ids.reserve(results_->total_size);
+            new_intermidiate_result_c = new intermidiate_content(temp_intermidiate_content_->file_index,temp_intermidiate_content_->predicate_relation,results_->total_size);
             for( int k = 0 ; k < results_->number_of_buckets ; k++) {
                 for(int j = 0 ; j < temp_bucket->current_size ; j ++ ) {
                     int index = temp_bucket->tuples[j].row_key_1;
@@ -428,7 +423,7 @@ bool only_one_relation_in_mid_results(struct file_array *file_array, intermidiat
 
 bool filter(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
     intermidiate_result *intermidiate_result_ = NULL;
-    intermidiate_content *filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A]), *intermidiate_content_results = NULL;
+    intermidiate_content *filter_results = NULL, *intermidiate_content_results = NULL;
 
     int64_t file_index = relations[predicate[RELATION_A]], predicate_relation = predicate[RELATION_A];
     int64_t column_a = predicate[COLUMN_A], filter_number = predicate[RELATION_B], column_b = predicate[COLUMN_B];
@@ -439,7 +434,7 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
 
     // if the relation does not exist in intermidiate results
     if( filter_index == NULL ) {
-        filter_results->row_ids.reserve(file->number_of_rows);
+        filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A],file->number_of_rows);
         if( operator_ == EQUAL ) {
             for( uint i = 0 ; i < file->number_of_rows ; i++ )
                 if( column_b == -1 && file->array[column_a*file->number_of_rows + i] == filter_number )
@@ -468,7 +463,7 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
     // if the relation exists in intermidiate results
     else {
         intermidiate_content_results = intermidiate_results_->results[filter_index[0]]->content[filter_index[1]];
-        filter_results->row_ids.reserve(intermidiate_content_results->row_ids.size());
+        filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A],intermidiate_content_results->row_ids.size());
         if( operator_ == EQUAL ) {
             for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
                 if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] == filter_number )
@@ -561,7 +556,7 @@ void execute_query(void *argument) {
 
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
-    free(execute_query_arguments);
+//    free(execute_query_arguments);
 }
 
 void read_queries(file_array *file_array) {
@@ -585,15 +580,10 @@ void read_queries(file_array *file_array) {
 
             sql_query *sql_query_ = new sql_query(query);
 
-        //    struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
-        //    error_handler(execute_query_arguments == NULL,"malloc failed");
-        //    *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
-        //    job_scheduler_->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
-
             struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
             error_handler(execute_query_arguments == NULL,"malloc failed");
             *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
-            execute_query(execute_query_arguments);
+            job_scheduler_->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
 
             result_index++;
         }

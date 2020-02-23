@@ -8,20 +8,6 @@
 
 job_scheduler *job_scheduler_ = new job_scheduler(2);
 
-struct test {
-    int x;
-    int y;
-};
-
-void test_function(void *argument) {
-    struct test *test = (struct test *)argument;
-    printf("x=%d, y=%d\n", test->x, test->y);
-}
-
-void test_function_2(void *argument) {
-    printf("no argument function\n");
-}
-
 int main(int argc, char **argv) {
     struct timespec begin, end;
     double time_spent;

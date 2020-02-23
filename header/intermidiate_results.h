@@ -9,6 +9,7 @@
 
 #define RESULTS_ROWS 15
 #define RESULTS_COLUMNS 5
+#define RESERVE_SIZE 10
 
 struct execute_query_arguments {
     file_array *file_array_;
@@ -23,7 +24,7 @@ class intermidiate_content {
     int64_t predicate_relation;
     std::vector<int64_t> row_ids;
 
-    intermidiate_content(int64_t , int64_t );
+    intermidiate_content(int64_t , int64_t , int );
     ~intermidiate_content();
 };
 
