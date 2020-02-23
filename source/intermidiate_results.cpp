@@ -141,10 +141,10 @@ relation *create_relation_from_intermidiate_results_for_join(struct file *file, 
 }
 
 results *sort_join_calculation(relation *R, relation *S, intermidiate_results *intermidiate_results_, std::vector<int> predicate) {
-    results *results_ = new results();
-
+    extern job_scheduler *job_scheduler_;
     bool flag_r = false, flag_s = false;
-//    int job_barrier = 0;
+    int job_barrier = 0;
+    results *results_ = new results();
 
     for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
         for( int j = 0 ; j < 2 ; j++ ) {
@@ -165,12 +165,24 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     }
 
     if( flag_r == false ) {
-        R->sort_iterative();
+        struct sort_iterative_arguments *sort_iterative_arguments_r = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
+        error_handler(sort_iterative_arguments_r == NULL,"malloc failed");
+        *sort_iterative_arguments_r = (struct sort_iterative_arguments){ .R = R };
+        job_scheduler_->schedule_job_scheduler(sort_iterative,sort_iterative_arguments_r,&job_barrier);
+    //    sort_iterative(sort_iterative_arguments_r);
+    //    free(sort_iterative_arguments_r);
     }
 
     if( flag_s == false ) {
-        S->sort_iterative();
+        struct sort_iterative_arguments *sort_iterative_arguments_s = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
+        error_handler(sort_iterative_arguments_s == NULL,"malloc failed");
+        *sort_iterative_arguments_s = (struct sort_iterative_arguments){ .R = S };
+        job_scheduler_->schedule_job_scheduler(sort_iterative,sort_iterative_arguments_s,&job_barrier);
+    //    sort_iterative(sort_iterative_arguments_s);
+    //    free(sort_iterative_arguments_s);
     }
+
+    job_scheduler_->dynamic_barrier_job_scheduler(&job_barrier);
 
     parallel_join(R,S,results_);
 

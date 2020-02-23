@@ -24,6 +24,8 @@ void free_job(struct job **job) {
 void *thread_function(void *job_scheduler_argument) {
     extern job_scheduler *job_scheduler_;
 
+    error_handler(job_scheduler_ == NULL,"job scheduler is NULL");
+
     while( true ) {
         error_handler(pthread_mutex_lock(&job_scheduler_->queue_mutex) != 0,"pthread_mutex_lock failed");
         while( (job_scheduler_->queue.size() == 0) && (job_scheduler_->stop == false) )
@@ -38,7 +40,6 @@ void *thread_function(void *job_scheduler_argument) {
 }
 
 job_scheduler::job_scheduler(int number_of_threads){
-    int return_value;
     error_handler(number_of_threads < 1,"number of threads is less than 1");
 
     this->number_of_threads = number_of_threads;
@@ -50,10 +51,6 @@ job_scheduler::job_scheduler(int number_of_threads){
     error_handler(pthread_cond_init(&this->queue_empty, NULL) != 0,"pthread_cond_init failed");
     error_handler(pthread_cond_init(&this->queue_not_empty, NULL) != 0,"pthread_cond_init failed");
     error_handler(pthread_cond_init(&this->barrier, NULL) != 0,"pthread_cond_init failed");
-    for( int i = 0 ; i < this->number_of_threads ; i++ ) {
-        return_value = pthread_create(&(this->thread_pool[i]),0,thread_function,NULL);
-        error_handler(return_value != 0,"pthread_create failed");
-    }
 }
 
 job_scheduler::~job_scheduler() {
@@ -63,6 +60,14 @@ job_scheduler::~job_scheduler() {
     pthread_cond_destroy(&this->queue_empty);
     pthread_cond_destroy(&this->queue_not_empty);
     pthread_cond_destroy(&this->barrier);
+}
+
+void job_scheduler::create_threads() {
+    int return_value;
+    for( int i = 0 ; i < this->number_of_threads ; i++ ) {
+        return_value = pthread_create(&(this->thread_pool[i]),0,thread_function,NULL);
+        error_handler(return_value != 0,"pthread_create failed");
+    }
 }
 
 void job_scheduler::barrier_job_scheduler() {
@@ -86,6 +91,8 @@ void job_scheduler::dynamic_barrier_job_scheduler(int *barrier) {
             error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
             break;
         }
+        else
+            error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
     }
 }
 

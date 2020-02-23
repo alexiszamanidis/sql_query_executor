@@ -12,6 +12,7 @@ int main(int argc, char **argv) {
     struct timespec begin, end;
     double time_spent;
 
+    job_scheduler_->create_threads();
     file_array *file_array_ = new file_array();
 
     clock_gettime(CLOCK_MONOTONIC, &begin);

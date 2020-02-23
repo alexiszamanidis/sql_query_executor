@@ -29,6 +29,7 @@ class job_scheduler {
 
         job_scheduler(int);
         ~job_scheduler();
+        void create_threads();
         void barrier_job_scheduler();
         void dynamic_barrier_job_scheduler(int *);
         void stop_job_scheduler();

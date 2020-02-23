@@ -157,9 +157,11 @@ void relation::fill_new_relation(relation *R, uint64_t *prefix_sum, uint64_t sta
     }
 }
 
-void relation::sort_iterative() {
-    relation R_new(this->num_tuples);
-    uint64_t start = 0, end = this->num_tuples, *histogram, *prefix_sum;;
+void sort_iterative(void *argument) {
+    struct sort_iterative_arguments *sort_iterative_arguments = (struct sort_iterative_arguments *)argument;
+    relation *R = sort_iterative_arguments->R;
+    relation R_new(R->num_tuples);
+    uint64_t start = 0, end = R->num_tuples, *histogram, *prefix_sum;;
     int byte = 1;
     std::queue<struct sort_node> sort_data_list;
     struct sort_node sort_node;
@@ -179,19 +181,19 @@ void relation::sort_iterative() {
         // fix R_new sorted by current histogram and prefix sum
         if( sort_node.byte%2 == 1 ) {
             // fix histogram for reader R
-            histogram = this->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
+            histogram = R->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
-            prefix_sum = create_prefix_sum(histogram,sort_node.start);
+            prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
             // R writes to R_new
-            this->fill_new_relation(&R_new, prefix_sum, sort_node.start, sort_node.end, sort_node.byte);
+            R->fill_new_relation(&R_new, prefix_sum, sort_node.start, sort_node.end, sort_node.byte);
         }
         else {
             // fix histogram for reader R_new
             histogram = R_new.create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
-            prefix_sum = create_prefix_sum(histogram,sort_node.start);
+            prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
             // R_new writes to R
-            R_new.fill_new_relation(this, prefix_sum, sort_node.start, sort_node.end, sort_node.byte);
+            R_new.fill_new_relation(R, prefix_sum, sort_node.start, sort_node.end, sort_node.byte);
         }
 
         for( int i = 0 ; i < histogram_indexes.size ; i++ ) {
@@ -202,11 +204,11 @@ void relation::sort_iterative() {
                 // if the byte % 2 == 1 then memcpy the part we just sort from R_new to R
                 if( sort_node.byte%2 == 1 ) {
                     R_new.quick_sort(start,end-1);
-                    memcpy(this->tuples+start,R_new.tuples+start,(end-start)*sizeof(struct tuple));
+                    memcpy(R->tuples+start,R_new.tuples+start,(end-start)*sizeof(struct tuple));
                 }
                 // otherwise just do quick sort on R
                 else
-                    quick_sort(start,end-1);
+                    R->quick_sort(start,end-1);
             }
             // if the hash duplicates are more than cache size then push {start,end,byte+1} to the list
             else {

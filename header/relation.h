@@ -44,13 +44,17 @@ class relation {
         int partition(int , int );
         void quick_sort(int , int );
         void fill_new_relation(relation *, uint64_t *, uint64_t , uint64_t , int );
-        void sort_iterative();
         uint64_t get_tuple_value(uint64_t );
         uint64_t get_tuple_row_id(uint64_t );
         uint64_t get_number_of_tuples();
         void get_range(uint64_t , uint64_t *);
 };
 
+struct sort_iterative_arguments {
+    relation *R;
+};
+
+void sort_iterative(void *);
 void parallel_join(relation *, relation *, results *);
 
 #endif
