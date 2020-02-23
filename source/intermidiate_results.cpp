@@ -123,26 +123,32 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     bool flag_r = false, flag_s = false;
 //    int job_barrier = 0;
 
-    for( int i = 0 ; i < (((int)intermidiate_results_->results.size()) && (flag_r == false)) ; i++ ) {
+    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
         for( int j = 0 ; j < 2 ; j++ ) {
-            if((intermidiate_results_->results[i]->sorted_relations[i] == predicate[RELATION_A]) && (intermidiate_results_->results[i]->sorted_relation_columns[i] == predicate[COLUMN_A])) {
+            if((intermidiate_results_->results[i]->sorted_relations[j] == predicate[RELATION_A]) && (intermidiate_results_->results[i]->sorted_relation_columns[j] == predicate[COLUMN_A])) {
                 flag_r = true;
                 break;
             }
         }
     }
 
-    for( int i = 0 ; i < (((int)intermidiate_results_->results.size()) && (flag_s == false)) ; i++ ) {
+    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
         for( int j = 0 ; j < 2 ; j++ ) {
-            if((intermidiate_results_->results[i]->sorted_relations[i] == predicate[RELATION_B]) && (intermidiate_results_->results[i]->sorted_relation_columns[i] == predicate[COLUMN_B])) {
+            if((intermidiate_results_->results[i]->sorted_relations[j] == predicate[RELATION_B]) && (intermidiate_results_->results[i]->sorted_relation_columns[j] == predicate[COLUMN_B])) {
                 flag_s = true;
                 break;
             }
         }
     }
 
-    R->sort_iterative();
-    S->sort_iterative();
+    if( flag_r == false ) {
+        R->sort_iterative();
+    }
+
+    if( flag_s == false ) {
+        S->sort_iterative();
+    }
+
     parallel_join(R,S,results_);
 
     return results_;
@@ -645,6 +651,8 @@ void intermidiate_results::print_intermidiate_results() {
     std::cout << "Intermidiate Results:" << std::endl;
     for( int i = 0 ; i < (int)this->results.size() ; i++ ) {
         std::cout << "Intermidiate Result[" << i << "]" << std::endl;
+        std::cout << "sorted_relations " << this->results[i]->sorted_relations[0] << " " << this->results[i]->sorted_relations[1] << std::endl;
+        std::cout << "sorted_relation_columns " << this->results[i]->sorted_relation_columns[0] << " " << this->results[i]->sorted_relation_columns[0] << std::endl;
         for( int j = 0 ; j < (int)this->results[i]->content.size() ; j++ ) {
             std::cout << "file_index:" << this->results[i]->content[j]->file_index << ", predicate_relation:" << this->results[i]->content[j]->predicate_relation;
             std::cout << ", row_ids:" << this->results[i]->content[j]->row_ids.size() << std::endl;

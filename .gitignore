@@ -34,3 +34,6 @@ project
 
 # output files
 *.csv
+
+# input files
+input_file_medium
