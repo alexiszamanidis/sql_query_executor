@@ -52,17 +52,18 @@ class intermidiate_results {
 int *search_intermidiate_results(intermidiate_results *, int64_t );
 void flip_predicate(std::vector<int> &);
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
+relation *create_relation_from_intermidiate_results_for_join(struct file *, intermidiate_results *, int *, int );
+results *sort_join_calculation(relation *, relation *, intermidiate_results *, std::vector<int> );
 bool none_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool both_relations_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *, int *);
 bool only_one_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *);
-void synchronize_intermidiate_results(intermidiate_result *, results *, int );
-bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool filter(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
+void projection_sum_results(file_array *, intermidiate_results *, sql_query *, int64_t **, int );
 void execute_query(void *);
 void read_queries(file_array *);
 int64_t **allocate_and_initialize_2d_array(int , int , int );
-void print_2d_array_results(int64_t **, int , int );
 void print_2d_array(int64_t **, int , int );
+void print_2d_array_results(int64_t **, int , int );
 void free_2d_array(int64_t ***, int );
 void inform_results_with_null(int , int64_t **, int );
 

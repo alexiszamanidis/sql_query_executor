@@ -4,7 +4,6 @@
 #include "./header.h"
 #include "./results.h"
 #include "./file_array.h"
-#include "./intermidiate_results.h"
 
 #define BUCKET_SIZE 256
 #define CACHE_SIZE 64*1024

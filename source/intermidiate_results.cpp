@@ -57,6 +57,24 @@ intermidiate_results::~intermidiate_results() {
     }
 }
 
+void intermidiate_results::print_intermidiate_results() {
+    std::cout << "Intermidiate Results:" << std::endl;
+    for( int i = 0 ; i < (int)this->results.size() ; i++ ) {
+        std::cout << "Intermidiate Result[" << i << "]" << std::endl;
+        std::cout << "sorted_relations " << this->results[i]->sorted_relations[0] << " " << this->results[i]->sorted_relations[1] << std::endl;
+        std::cout << "sorted_relation_columns " << this->results[i]->sorted_relation_columns[0] << " " << this->results[i]->sorted_relation_columns[0] << std::endl;
+        for( int j = 0 ; j < (int)this->results[i]->content.size() ; j++ ) {
+            std::cout << "file_index:" << this->results[i]->content[j]->file_index << ", predicate_relation:" << this->results[i]->content[j]->predicate_relation;
+            std::cout << ", row_ids:" << this->results[i]->content[j]->row_ids.size() << std::endl;
+        /*
+            for( int k = 0 ; k < (int)this->results[i]->content[j]->row_ids.size() ; k++ )
+                std::cout << this->results[i]->content[j]->row_ids[k] << " ";
+            std::cout << std::endl;
+        */
+        }
+    }
+}
+
 int *search_intermidiate_results(intermidiate_results *intermidiate_results_, int64_t predicate_relation) {
     int *intermidiate_indexes = NULL;
     for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
@@ -646,22 +664,4 @@ void free_2d_array(int64_t ***array, int rows) {
 void inform_results_with_null(int number_of_nulls, int64_t **results, int result_index) {
     for( int i = 0 ; i < number_of_nulls ; i++)
         results[result_index][i] = -2;
-}
-
-void intermidiate_results::print_intermidiate_results() {
-    std::cout << "Intermidiate Results:" << std::endl;
-    for( int i = 0 ; i < (int)this->results.size() ; i++ ) {
-        std::cout << "Intermidiate Result[" << i << "]" << std::endl;
-        std::cout << "sorted_relations " << this->results[i]->sorted_relations[0] << " " << this->results[i]->sorted_relations[1] << std::endl;
-        std::cout << "sorted_relation_columns " << this->results[i]->sorted_relation_columns[0] << " " << this->results[i]->sorted_relation_columns[0] << std::endl;
-        for( int j = 0 ; j < (int)this->results[i]->content.size() ; j++ ) {
-            std::cout << "file_index:" << this->results[i]->content[j]->file_index << ", predicate_relation:" << this->results[i]->content[j]->predicate_relation;
-            std::cout << ", row_ids:" << this->results[i]->content[j]->row_ids.size() << std::endl;
-        /*
-            for( int k = 0 ; k < (int)this->results[i]->content[j]->row_ids.size() ; k++ )
-                std::cout << this->results[i]->content[j]->row_ids[k] << " ";
-            std::cout << std::endl;
-        */
-        }
-    }
 }
