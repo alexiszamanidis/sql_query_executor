@@ -69,6 +69,7 @@ bool none_relation_in_mid_results(struct file_array *, intermidiate_results *, s
 bool both_relations_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *, int *);
 bool only_one_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *);
 bool filter(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
+void projection_sum_results_job(void *argument);
 void projection_sum_results(file_array *, intermidiate_results *, sql_query *, int64_t **, int );
 void execute_query(void *);
 void read_queries(file_array *);

@@ -27,4 +27,7 @@ class sql_query {
         void sort_by_frequency();
 };
 
+bool compare_number_of_predicates(std::pair<std::string,int> , std::pair<std::string,int> );
+void increase_number_of_predicates(std::map<std::string, int>& , int , int );
+
 #endif

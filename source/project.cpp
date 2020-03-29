@@ -6,7 +6,7 @@
 #include "../thread_pool/header/job_scheduler.h"
 #include "../header/intermidiate_results.h"
 
-struct job_scheduler *job_scheduler_ = initialize_job_scheduler(2);
+struct job_scheduler *job_scheduler = initialize_job_scheduler(3);
 
 int main(int argc, char **argv) {
     struct timespec begin, end;
@@ -22,8 +22,8 @@ int main(int argc, char **argv) {
     time_spent = time_spent + (end.tv_nsec-begin.tv_nsec)/1000000000.0;
     printf("Execution time = %f\n",time_spent);
 
-    barrier_job_scheduler(job_scheduler_);
-    free_job_scheduler(job_scheduler_);
+    barrier_job_scheduler(job_scheduler);
+    free_job_scheduler(job_scheduler);
     delete file_array_;
 
     return SUCCESS;

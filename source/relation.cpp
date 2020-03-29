@@ -109,17 +109,6 @@ uint64_t *relation::create_prefix_sum(uint64_t *histogram, uint64_t start) {
     return temp;
 }
 
-void relation::swap_tuples(int i, int j) {
-    struct tuple temp_tuple;
-
-    temp_tuple.row_id = this->tuples[j].row_id;
-    temp_tuple.value = this->tuples[j].value;
-    this->tuples[j].row_id = this->tuples[i].row_id;
-    this->tuples[j].value = this->tuples[i].value;
-    this->tuples[i].row_id = temp_tuple.row_id;
-    this->tuples[i].value = temp_tuple.value;
-}
-
 int relation::partition(int start, int end) {
     //  pivot                          , index of smaller element
     uint64_t pivot = this->tuples[end].value;
@@ -129,13 +118,13 @@ int relation::partition(int start, int end) {
         // if current element is smaller than the pivot, increase index of smaller element and swap the tuples 
         if( this->tuples[j].value < pivot ) {
             i++;
-            swap_tuples(i,j);
+            swap(this->tuples[i],this->tuples[j]);
         }
     }
     i++;
     // put pivot at correct position
     if( this->tuples[i].value != this->tuples[end].value )
-        swap_tuples(i,end);
+        swap(this->tuples[i],this->tuples[end]);
     return i;
 }
 
@@ -155,6 +144,56 @@ void relation::fill_new_relation(relation *R, uint64_t *prefix_sum, uint64_t sta
     for( uint64_t i = start ; i < end ; i++ ) {
         temp_value=binary_mask(this->tuples[i].value,byte);
         R->tuples[((counter[temp_value]++)+prefix_sum[temp_value])] = this->tuples[i];
+    }
+}
+
+uint64_t relation::get_tuple_value(uint64_t position) {
+    return this->tuples[position].value;
+}
+
+uint64_t relation::get_tuple_row_id(uint64_t position) {
+    return this->tuples[position].row_id;
+}
+
+uint64_t relation::get_number_of_tuples() {
+    return this->num_tuples;
+}
+
+void relation::get_range(uint64_t start, uint64_t *end) {
+    // calculate the range
+    while( *end != this->num_tuples )
+        if( (*end+1 != this->num_tuples)&&(this->tuples[start].value == this->tuples[*end+1].value) )
+            (*end)++;
+        else
+            return;
+}
+
+void parallel_join(relation *R, relation *S, results *results) {
+    uint64_t index_R_start = 0, index_S_start = 0, index_R_end = 0, index_S_end = 0, i, j;
+    while( ( index_R_start != R->num_tuples ) && ( index_S_start != S->num_tuples ) ){
+        // calculate ranges
+        R->get_range(index_R_start,&index_R_end);
+        S->get_range(index_S_start,&index_S_end);
+
+        // if the value is the same then do a double loop and insert all the row id into the list
+        if( R->tuples[index_R_start].value == S->tuples[index_S_start].value ) {
+            for( i = index_R_start ; i <= index_R_end ; i++ )
+                for( j = index_S_start ; j <= index_S_end ; j++ )
+                    results->insert_tuple(R->get_tuple_row_id(i), S->get_tuple_row_id(j));
+            // also move R pointer
+            index_R_start = index_R_end + 1;
+            index_R_end = index_R_start;
+        }
+        // if R's value is less than S's value then move R pointer
+        else if( R->tuples[index_R_start].value < S->tuples[index_S_start].value ) {
+            index_R_start = index_R_end + 1;
+            index_R_end = index_R_start;
+        }
+        // if S's value is less than R's value then move R pointer
+        else {
+            index_S_start = index_S_end + 1;
+            index_S_end = index_S_start;
+        }
     }
 }
 
@@ -224,53 +263,3 @@ void sort_iterative(void *argument) {
         free(prefix_sum);
     }
 }
-
-uint64_t relation::get_tuple_value(uint64_t position) {
-    return this->tuples[position].value;
-}
-
-uint64_t relation::get_tuple_row_id(uint64_t position) {
-    return this->tuples[position].row_id;
-}
-
-uint64_t relation::get_number_of_tuples() {
-    return this->num_tuples;
-}
-
-void relation::get_range(uint64_t start, uint64_t *end) {
-    // calculate the range
-    while( *end != this->num_tuples )
-        if( (*end+1 != this->num_tuples)&&(this->tuples[start].value == this->tuples[*end+1].value) )
-            (*end)++;
-        else
-            return;
-}
-
-void parallel_join(relation *R, relation *S, results *results) {
-    uint64_t index_R_start = 0, index_S_start = 0, index_R_end = 0, index_S_end = 0, i, j;
-    while( ( index_R_start != R->num_tuples ) && ( index_S_start != S->num_tuples ) ){
-        // calculate ranges
-        R->get_range(index_R_start,&index_R_end);
-        S->get_range(index_S_start,&index_S_end);
-
-        // if the value is the same then do a double loop and insert all the row id into the list
-        if( R->tuples[index_R_start].value == S->tuples[index_S_start].value ) {
-            for( i = index_R_start ; i <= index_R_end ; i++ )
-                for( j = index_S_start ; j <= index_S_end ; j++ )
-                    results->insert_tuple(R->get_tuple_row_id(i), S->get_tuple_row_id(j));
-            // also move R pointer
-            index_R_start = index_R_end + 1;
-            index_R_end = index_R_start;
-        }
-        // if R's value is less than S's value then move R pointer
-        else if( R->tuples[index_R_start].value < S->tuples[index_S_start].value ) {
-            index_R_start = index_R_end + 1;
-            index_R_end = index_R_start;
-        }
-        // if S's value is less than R's value then move R pointer
-        else {
-            index_S_start = index_S_end + 1;
-            index_S_end = index_S_start;
-        }
-    }
-} 

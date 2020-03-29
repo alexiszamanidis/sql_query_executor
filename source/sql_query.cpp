@@ -173,20 +173,8 @@ void sql_query::sort_by_frequency() {
                 }
             }
             // swap predicate
-            if( swap_index != i ) {
-                int relation = this->joins[i][0];
-                int column = this->joins[i][1];
-                this->joins[i][0] = this->joins[swap_index][0];
-                this->joins[i][1] = this->joins[swap_index][1];
-                this->joins[swap_index][0] = relation;
-                this->joins[swap_index][1] = column;
-                relation = this->joins[i][3];
-                column = this->joins[i][4];
-                this->joins[i][3] = this->joins[swap_index][3];
-                this->joins[i][4] = this->joins[swap_index][4];
-                this->joins[swap_index][3] = relation;
-                this->joins[swap_index][4] = column;
-            }
+            if( swap_index != i )
+                swap(this->joins[i],this->joins[swap_index]);
             swap_index++;
             frequency++;
         }

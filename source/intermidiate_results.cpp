@@ -91,13 +91,8 @@ int *search_intermidiate_results(intermidiate_results *intermidiate_results_, in
 }
 
 void flip_predicate(std::vector<int> &predicate) {
-    int temp;
-    temp = predicate[RELATION_A];
-    predicate[RELATION_A] = predicate[RELATION_B];
-    predicate[RELATION_B] = temp;
-    temp = predicate[COLUMN_A];
-    predicate[COLUMN_A] = predicate[COLUMN_B];
-    predicate[COLUMN_B] = temp;
+    swap(predicate[RELATION_A],predicate[RELATION_B]);
+    swap(predicate[COLUMN_A],predicate[COLUMN_B]);
 }
 
 bool join(file_array *file_array, intermidiate_results *intermidiate_results_, std::vector<int> relations, std::vector<int> predicate) {
@@ -141,7 +136,7 @@ relation *create_relation_from_intermidiate_results_for_join(struct file *file, 
 }
 
 results *sort_join_calculation(relation *R, relation *S, intermidiate_results *intermidiate_results_, std::vector<int> predicate) {
-    extern struct job_scheduler *job_scheduler_;
+    extern struct job_scheduler *job_scheduler;
     bool flag_r = false, flag_s = false;
     int job_barrier = 0;
     results *results_ = new results();
@@ -168,7 +163,7 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
         struct sort_iterative_arguments *sort_iterative_arguments_r = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
         error_handler(sort_iterative_arguments_r == NULL,"malloc failed");
         *sort_iterative_arguments_r = (struct sort_iterative_arguments){ .R = R };
-        schedule_job_scheduler(job_scheduler_,sort_iterative,sort_iterative_arguments_r,&job_barrier);
+        schedule_job_scheduler(job_scheduler,sort_iterative,sort_iterative_arguments_r,&job_barrier);
     //    sort_iterative(sort_iterative_arguments_r);
     //    free(sort_iterative_arguments_r);
     }
@@ -177,12 +172,12 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
         struct sort_iterative_arguments *sort_iterative_arguments_s = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
         error_handler(sort_iterative_arguments_s == NULL,"malloc failed");
         *sort_iterative_arguments_s = (struct sort_iterative_arguments){ .R = S };
-        schedule_job_scheduler(job_scheduler_,sort_iterative,sort_iterative_arguments_s,&job_barrier);
+        schedule_job_scheduler(job_scheduler,sort_iterative,sort_iterative_arguments_s,&job_barrier);
     //    sort_iterative(sort_iterative_arguments_s);
     //    free(sort_iterative_arguments_s);
     }
 
-    dynamic_barrier_job_scheduler(job_scheduler_,&job_barrier);
+    dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
 
     parallel_join(R,S,results_);
 
@@ -542,7 +537,7 @@ void projection_sum_results_job(void *argument) {
 }
 
 void projection_sum_results(file_array *file_array, intermidiate_results *intermidiate_results_, sql_query *sql_query_, int64_t **results, int result_index) {
-    extern struct job_scheduler *job_scheduler_;
+    extern struct job_scheduler *job_scheduler;
     int job_barrier = 0;
 
     for( uint i = 0 ; i < sql_query_->projections.size() ; i++ ) {
@@ -561,11 +556,11 @@ void projection_sum_results(file_array *file_array, intermidiate_results *interm
         error_handler(projection_sum_results_arguments == NULL,"malloc failed");
         *projection_sum_results_arguments = (struct projection_sum_results_arguments){  .file_array_ = file_array, .file_index = file_index, .intermidiate_results_ = intermidiate_results_, .intermidiate_result_index = intermidiate_result_index, \
                                                                                         .results = results, .result_index = result_index, .column = column, .result_column = i };
-        schedule_job_scheduler(job_scheduler_,projection_sum_results_job,projection_sum_results_arguments,&job_barrier);
+        schedule_job_scheduler(job_scheduler,projection_sum_results_job,projection_sum_results_arguments,&job_barrier);
     //    projection_sum_results_job(projection_sum_results_arguments);
     //    free(projection_sum_results_arguments);
     }
-    dynamic_barrier_job_scheduler(job_scheduler_,&job_barrier);
+    dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
 }
 
 void execute_query(void *argument) {
@@ -612,7 +607,7 @@ void read_queries(file_array *file_array) {
     int result_index, job_barrier = 0;
     bool stop = false;
     int64_t **results = allocate_and_initialize_2d_array(RESULTS_ROWS,RESULTS_COLUMNS,-1);
-    extern struct job_scheduler *job_scheduler_;
+    extern struct job_scheduler *job_scheduler;
 
     while( true ) {
         result_index = 0;
@@ -630,16 +625,16 @@ void read_queries(file_array *file_array) {
             struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
             error_handler(execute_query_arguments == NULL,"malloc failed");
             *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
-        //    job_scheduler_->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
-            schedule_job_scheduler(job_scheduler_,execute_query,execute_query_arguments,&job_barrier);
+        //    job_scheduler->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
+            schedule_job_scheduler(job_scheduler,execute_query,execute_query_arguments,&job_barrier);
         //    execute_query(execute_query_arguments);
         //    free(execute_query_arguments);
 
             result_index++;
         }
         // wait until the whole batch ends
-        dynamic_barrier_job_scheduler(job_scheduler_,&job_barrier);
-    //    job_scheduler_->dynamic_barrier_job_scheduler(&job_barrier);
+        dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
+    //    job_scheduler->dynamic_barrier_job_scheduler(&job_barrier);
         // print batch results
         print_2d_array_results(results,result_index,RESULTS_COLUMNS);
         // if all batches were executed, leave
