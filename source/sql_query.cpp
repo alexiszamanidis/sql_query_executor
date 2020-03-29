@@ -128,7 +128,6 @@ void increase_number_of_predicates(std::map<std::string, int>& map, int relation
 }
 
 void sql_query::sort_by_frequency() {
-    std::cout << "sort_by_frequency:" << std::endl;
     std::map<std::string, int> map;
 
     // push filters frequency
@@ -145,10 +144,6 @@ void sql_query::sort_by_frequency() {
     std::vector<std::pair<std::string, int> > sorted_by_freq(map.begin(), map.end());
     std::sort(sorted_by_freq.begin(), sorted_by_freq.end(), compare_number_of_predicates);
 
-    // print sorted vector
-    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it)
-        std::cout << "ordered: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
-
     // remove filters frequency
     for( uint i = 0; i < this->filters.size() ; i++ ) {
         std::string string = std::to_string(this->filters[i][0]) + "." + std::to_string(this->filters[i][1]);
@@ -156,20 +151,45 @@ void sql_query::sort_by_frequency() {
         it->second = it->second-1;
     }
 
-    // print sorted vector
-    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it)
-        std::cout << "ordered_2: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
-    
-/*
+
+    uint swap_index = 0, i;
     // optimize query by swapping the predicates
     for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it) {
         int frequency = 0;
-        std::cout << "ordered: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
         while( frequency < it->second ) {
-        //    std::cout << "aha " << std::endl;
+            // find where the predicate is, also decrease other predicate frequency
+            for( i = swap_index; i < this->joins.size() ; i++ ) {
+                if( ((it->first[0]-'0') == this->joins[i][0]) && ((it->first[2]-'0') == this->joins[i][1]) ) {
+                    std::string string = std::to_string(this->joins[i][3]) + "." + std::to_string(this->joins[i][4]);
+                    auto it = std::find_if( sorted_by_freq.begin(), sorted_by_freq.end(),[&string](const std::pair<std::string, int>& element){ return element.first == string;} );
+                    it->second = it->second-1;
+                    break;
+                }
+                else if(  ((it->first[0]-'0') == this->joins[i][3]) && ((it->first[2]-'0') == this->joins[i][4]) ) {
+                    std::string string = std::to_string(this->joins[i][0]) + "." + std::to_string(this->joins[i][1]);
+                    auto it = std::find_if( sorted_by_freq.begin(), sorted_by_freq.end(),[&string](const std::pair<std::string, int>& element){ return element.first == string;} );
+                    it->second = it->second-1;
+                    break;
+                }
+            }
+            // swap predicate
+            if( swap_index != i ) {
+                int relation = this->joins[i][0];
+                int column = this->joins[i][1];
+                this->joins[i][0] = this->joins[swap_index][0];
+                this->joins[i][1] = this->joins[swap_index][1];
+                this->joins[swap_index][0] = relation;
+                this->joins[swap_index][1] = column;
+                relation = this->joins[i][3];
+                column = this->joins[i][4];
+                this->joins[i][3] = this->joins[swap_index][3];
+                this->joins[i][4] = this->joins[swap_index][4];
+                this->joins[swap_index][3] = relation;
+                this->joins[swap_index][4] = column;
+            }
+            swap_index++;
             frequency++;
         }
     }
-*/
 
 }

@@ -158,6 +158,10 @@ void relation::fill_new_relation(relation *R, uint64_t *prefix_sum, uint64_t sta
     }
 }
 
+inline int compare_tuples(const void *tuple_1, const void *tuple_2) {
+    return ((struct tuple *)tuple_1)->value - ((struct tuple *)tuple_2)->value;
+}
+
 void sort_iterative(void *argument) {
     struct sort_iterative_arguments *sort_iterative_arguments = (struct sort_iterative_arguments *)argument;
     relation *R = sort_iterative_arguments->R;
@@ -202,14 +206,12 @@ void sort_iterative(void *argument) {
             end = prefix_sum[histogram_indexes.indexes[i]]+histogram[histogram_indexes.indexes[i]];
             // if the hash duplicates are less or equal to cache size then just do quick sort
             if( histogram[histogram_indexes.indexes[i]] <= DUPLICATES ) {
-                // if the byte % 2 == 1 then memcpy the part we just sort from R_new to R
-                if( sort_node.byte%2 == 1 ) {
-                    R_new.quick_sort(start,end-1);
+                // if the byte % 2 == 1 memcpy R_new to R
+                if( sort_node.byte%2 == 1 )
                     memcpy(R->tuples+start,R_new.tuples+start,(end-start)*sizeof(struct tuple));
-                }
-                // otherwise just do quick sort on R
-                else
-                    R->quick_sort(start,end-1);
+                // then do quick sort on R
+                qsort(R->tuples+start,end-start,sizeof(struct tuple),compare_tuples);
+                //R->quick_sort(start,end-1);
             }
             // if the hash duplicates are more than cache size then push {start,end,byte+1} to the list
             else {
