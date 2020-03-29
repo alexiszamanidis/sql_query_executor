@@ -80,19 +80,20 @@ void job_scheduler::barrier_job_scheduler() {
 void job_scheduler::dynamic_barrier_job_scheduler(int *barrier) {
     while( true ) {
         error_handler(pthread_mutex_lock(&this->queue_mutex) != 0,"pthread_mutex_lock failed");
+        // std::cout << this->queue.size() << " " << (*barrier) << std::endl;
         if( (this->queue.size() != 0) && ((*barrier) != 0) )
             this->execute_job();
         else if( (this->queue.size() == 0) && ((*barrier) != 0) ) {
+            //std::cout << "->" <<this->queue.size() << " " << (*barrier) << std::endl;
             while( (this->queue.size() == 0) && ((*barrier) != 0) )
                 pthread_cond_wait(&this->barrier,&this->queue_mutex);
             error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
+            //std::cout << "-->" <<this->queue.size() << " " << (*barrier) << std::endl;
         }
-        else if( (this->queue.size() == 0) && ((*barrier) == 0) ) {
+        else {
             error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
             break;
         }
-        else
-            error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
     }
 }
 
@@ -116,7 +117,6 @@ void job_scheduler::schedule_job_scheduler(void (*function)(void*), void *argume
 void job_scheduler::execute_job() {
     struct job *job = NULL;
     void (*function)(void*), *argument;
-    int *barrier;
 
     job = this->queue.front();
     this->queue.pop();
@@ -128,12 +128,9 @@ void job_scheduler::execute_job() {
     function(argument);
 
     error_handler(pthread_mutex_lock(&this->queue_mutex) != 0,"pthread_mutex_lock failed");
-    barrier = job->barrier;
     free_job(&job);
     this->jobs--;
-    if( this->jobs == 0 )
-        error_handler(pthread_cond_signal(&this->queue_empty) != 0,"pthread_cond_signal failed");
-    if( (*barrier) == 0 )
-        error_handler(pthread_cond_signal(&this->barrier) != 0,"pthread_cond_signal failed");
+    error_handler(pthread_cond_signal(&this->queue_empty) != 0,"pthread_cond_signal failed");
+    error_handler(pthread_cond_signal(&this->barrier) != 0,"pthread_cond_signal failed");
     error_handler(pthread_mutex_unlock(&this->queue_mutex) != 0,"pthread_mutex_unlock failed");
 }

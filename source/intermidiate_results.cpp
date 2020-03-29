@@ -530,9 +530,22 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
         return true;
 }
 
+void projection_sum_results_job(void *argument) {
+    struct projection_sum_results_arguments *projection_sum_results_arguments = (struct projection_sum_results_arguments *)argument;
+    int64_t sum = 0;
+    struct file *file = projection_sum_results_arguments->file_array_->files[projection_sum_results_arguments->file_index];
+    intermidiate_content *intermidiate_content_ = projection_sum_results_arguments->intermidiate_results_->results[projection_sum_results_arguments->intermidiate_result_index[0]]->content[projection_sum_results_arguments->intermidiate_result_index[1]];
+    for( uint j = 0 ; j < intermidiate_content_->row_ids.size() ; j++ )
+        sum = sum + file->array[projection_sum_results_arguments->column*file->number_of_rows+intermidiate_content_->row_ids[j]];
+    projection_sum_results_arguments->results[projection_sum_results_arguments->result_index][projection_sum_results_arguments->result_column] = sum;
+    free(projection_sum_results_arguments->intermidiate_result_index);
+}
+
 void projection_sum_results(file_array *file_array, intermidiate_results *intermidiate_results_, sql_query *sql_query_, int64_t **results, int result_index) {
+    extern struct job_scheduler *job_scheduler_;
+    int job_barrier = 0;
+
     for( uint i = 0 ; i < sql_query_->projections.size() ; i++ ) {
-        int64_t sum = 0;
         int64_t predicate_relation = sql_query_->projections[i][0];
         int64_t file_index = sql_query_->relations[predicate_relation];
         int64_t column = sql_query_->projections[i][1];
@@ -543,14 +556,16 @@ void projection_sum_results(file_array *file_array, intermidiate_results *interm
             continue;
         }
         
-        struct file *file = file_array->files[file_index];
-        intermidiate_content *intermidiate_content_ = intermidiate_results_->results[intermidiate_result_index[0]]->content[intermidiate_result_index[1]];
-        for( uint j = 0 ; j < intermidiate_content_->row_ids.size() ; j++ )
-            sum = sum + file->array[column*file->number_of_rows+intermidiate_content_->row_ids[j]];
-        results[result_index][i] = sum;
-        if( intermidiate_result_index != NULL )
-            free(intermidiate_result_index);
+        //projection_sum_results_job(NULL);
+        struct projection_sum_results_arguments *projection_sum_results_arguments = (struct projection_sum_results_arguments *)malloc(sizeof(struct projection_sum_results_arguments));
+        error_handler(projection_sum_results_arguments == NULL,"malloc failed");
+        *projection_sum_results_arguments = (struct projection_sum_results_arguments){  .file_array_ = file_array, .file_index = file_index, .intermidiate_results_ = intermidiate_results_, .intermidiate_result_index = intermidiate_result_index, \
+                                                                                        .results = results, .result_index = result_index, .column = column, .result_column = i };
+        job_scheduler_->schedule_job_scheduler(projection_sum_results_job,projection_sum_results_arguments,&job_barrier);
+    //    projection_sum_results_job(projection_sum_results_arguments);
+    //    free(projection_sum_results_arguments);
     }
+    job_scheduler_->dynamic_barrier_job_scheduler(&job_barrier);
 }
 
 void execute_query(void *argument) {

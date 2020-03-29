@@ -3,7 +3,7 @@
 
 #include "./header.h"
 
-#define NUMBER_OF_THREADS 2
+#define NUMBER_OF_THREADS 5
 
 struct job {
     void   (*function)(void* argument);

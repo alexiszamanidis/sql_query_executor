@@ -49,6 +49,17 @@ class intermidiate_results {
     void print_intermidiate_results();
 };
 
+struct projection_sum_results_arguments {
+    file_array *file_array_;
+    int64_t file_index;
+    intermidiate_results *intermidiate_results_;
+    int *intermidiate_result_index;
+    int64_t **results;
+    int result_index;
+    int64_t column;
+    uint result_column;
+};
+
 int *search_intermidiate_results(intermidiate_results *, int64_t );
 void flip_predicate(std::vector<int> &);
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );

@@ -6,7 +6,7 @@
 #include "../header/job_scheduler.h"
 #include "../header/intermidiate_results.h"
 
-job_scheduler *job_scheduler_ = new job_scheduler(2);
+job_scheduler *job_scheduler_ = new job_scheduler(NUMBER_OF_THREADS);
 
 int main(int argc, char **argv) {
     struct timespec begin, end;
