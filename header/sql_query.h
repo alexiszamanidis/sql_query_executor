@@ -24,6 +24,7 @@ class sql_query {
         void parse_predicate_query(char *);
         void parse_projection_query(char * );
         void sql_query_print();
+        void sort_by_frequency();
 };
 
 #endif

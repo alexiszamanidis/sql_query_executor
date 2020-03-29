@@ -112,3 +112,64 @@ void sql_query::sql_query_print() {
         std::cout << " " << this->joins[i][3] << " " << this->joins[i][4] << std::endl;
     }
 }
+
+bool compare_number_of_predicates(std::pair<std::string,int> a, std::pair<std::string,int> b) {
+    return a.second > b.second;
+}
+
+void increase_number_of_predicates(std::map<std::string, int>& map, int relation, int column) {
+    std::map<std::string, int>::const_iterator get_predicate;
+    std::string buffer = std::to_string(relation) + "." + std::to_string(column);
+    get_predicate = map.find(buffer);
+    if( get_predicate == map.end() )
+        map[buffer] = 1;
+    else
+        map[buffer] = get_predicate->second + 1;
+}
+
+void sql_query::sort_by_frequency() {
+    std::cout << "sort_by_frequency:" << std::endl;
+    std::map<std::string, int> map;
+
+    // push filters frequency
+    for( uint i = 0; i < this->filters.size() ; i++ )
+        increase_number_of_predicates(map,this->filters[i][0],this->filters[i][1]);
+
+    // push joins frequency
+    for( uint i = 0; i < this->joins.size() ; i++ ) {
+        increase_number_of_predicates(map,this->joins[i][0],this->joins[i][1]);
+        increase_number_of_predicates(map,this->joins[i][3],this->joins[i][4]);
+    }
+
+    // sort map by frequency
+    std::vector<std::pair<std::string, int> > sorted_by_freq(map.begin(), map.end());
+    std::sort(sorted_by_freq.begin(), sorted_by_freq.end(), compare_number_of_predicates);
+
+    // print sorted vector
+    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it)
+        std::cout << "ordered: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
+
+    // remove filters frequency
+    for( uint i = 0; i < this->filters.size() ; i++ ) {
+        std::string string = std::to_string(this->filters[i][0]) + "." + std::to_string(this->filters[i][1]);
+        auto it = std::find_if( sorted_by_freq.begin(), sorted_by_freq.end(),[&string](const std::pair<std::string, int>& element){ return element.first == string;} );
+        it->second = it->second-1;
+    }
+
+    // print sorted vector
+    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it)
+        std::cout << "ordered_2: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
+    
+/*
+    // optimize query by swapping the predicates
+    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it) {
+        int frequency = 0;
+        std::cout << "ordered: "<< it->first[0] << it->first[1] << it->first[2]  << " " << it->second << std::endl;
+        while( frequency < it->second ) {
+        //    std::cout << "aha " << std::endl;
+            frequency++;
+        }
+    }
+*/
+
+}

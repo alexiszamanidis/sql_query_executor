@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -g -Wall -O3 -pthread
+CFLAGS = -g -Wall -O3 -pthread -std=c++11
 RMFLAGS = -rf
 EXEC = project
 OBJS = relation.o results.o sql_query.o file_array.o queue.o job_scheduler.o  intermidiate_results.o

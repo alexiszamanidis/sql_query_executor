@@ -573,6 +573,8 @@ void execute_query(void *argument) {
     intermidiate_results *intermidiate_results_ = new intermidiate_results();
     bool return_value;
 
+    execute_query_arguments->sql_query_->sort_by_frequency();
+
     // execute filters
     for( uint i = 0 ; i < execute_query_arguments->sql_query_->filters.size() ; i++ ) {
         return_value = filter(execute_query_arguments->file_array_,intermidiate_results_,execute_query_arguments->sql_query_->relations,execute_query_arguments->sql_query_->filters[i]);

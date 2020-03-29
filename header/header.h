@@ -15,6 +15,8 @@
 #include <pthread.h>
 #include <cstdlib>
 #include <stdio.h>
+#include <map>
+#include <algorithm>
 
 #define SUCCESS 0
 #define FAILURE -1
