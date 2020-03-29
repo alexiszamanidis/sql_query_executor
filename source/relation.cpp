@@ -122,8 +122,9 @@ void relation::swap_tuples(int i, int j) {
 
 int relation::partition(int start, int end) {
     //  pivot                          , index of smaller element
-    uint64_t pivot = this->tuples[end].value, i = start-1;
-
+    uint64_t pivot = this->tuples[end].value;
+    int64_t i = start-1;
+    
     for( int j = start ; j < end ; j++ ) {
         // if current element is smaller than the pivot, increase index of smaller element and swap the tuples 
         if( this->tuples[j].value < pivot ) {

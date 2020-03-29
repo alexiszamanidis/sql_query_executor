@@ -37,3 +37,9 @@ project
 
 # input files
 input_file_medium
+
+# vscode
+.vscode
+
+# workload/medium
+medium

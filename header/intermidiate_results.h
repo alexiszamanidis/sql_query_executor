@@ -4,7 +4,7 @@
 #include "./header.h"
 #include "./file_array.h"
 #include "./sql_query.h"
-#include "./job_scheduler.h"
+#include "../thread_pool/header/job_scheduler.h"
 #include "./relation.h"
 
 #define RESULTS_ROWS 15
