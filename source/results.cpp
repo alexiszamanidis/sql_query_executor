@@ -10,8 +10,8 @@ results::results() {
 results::~results() {
     while(this->head != NULL) {
         this->tail = this->head->next_bucket;
-        free(this->head->tuples);
-        free(this->head);
+        free_pointer(&this->head->tuples);
+        free_pointer(&this->head);
         this->head = this->tail;
     }
 }
@@ -61,9 +61,9 @@ void results::results_print() {
 }
 
 struct bucket *results::results_initialize_bucket() {
-    struct bucket *new_bucket = (struct bucket *)malloc(sizeof(struct bucket));
+    struct bucket *new_bucket = my_malloc(struct bucket,1);
     error_handler(new_bucket == NULL, "malloc failed");
-    new_bucket->tuples = (struct row_key_tuple *)malloc(NUMBER_OF_TUPLES_IN_BUCKET*sizeof(struct row_key_tuple));
+    new_bucket->tuples = my_malloc(struct row_key_tuple,NUMBER_OF_TUPLES_IN_BUCKET);
     error_handler(new_bucket->tuples == NULL, "malloc failed");
 
     new_bucket->max_size = NUMBER_OF_TUPLES_IN_BUCKET;

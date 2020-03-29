@@ -2,13 +2,16 @@ CC = g++
 CFLAGS = -g -Wall -O3 -pthread -std=c++11
 RMFLAGS = -rf
 EXEC = project
-OBJS = relation.o results.o sql_query.o file_array.o queue.o job_scheduler.o  intermidiate_results.o
+OBJS = utilities.o relation.o results.o sql_query.o file_array.o queue.o job_scheduler.o  intermidiate_results.o
 
 all: project usage
 
 project: $(OBJS) project.cpp
 	$(CC) $(CFLAGS) $(OBJS) project.cpp -o $(EXEC)
 	rm $(RMFLAGS) $(OBJS)
+
+utilities.o: utilities.cpp
+	$(CC) $(CFLAGS) -c utilities.cpp
 
 relation.o: relation.cpp
 	$(CC) $(CFLAGS) -c relation.cpp

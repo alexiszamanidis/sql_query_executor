@@ -6,6 +6,7 @@
 #include "./sql_query.h"
 #include "../thread_pool/header/job_scheduler.h"
 #include "./relation.h"
+#include "./utilities.h"
 
 #define RESULTS_ROWS 15
 #define RESULTS_COLUMNS 5
@@ -73,10 +74,7 @@ void projection_sum_results_job(void *argument);
 void projection_sum_results(file_array *, intermidiate_results *, sql_query *, int64_t **, int );
 void execute_query(void *);
 void read_queries(file_array *);
-int64_t **allocate_and_initialize_2d_array(int , int , int );
-void print_2d_array(int64_t **, int , int );
 void print_2d_array_results(int64_t **, int , int );
-void free_2d_array(int64_t ***, int );
 void inform_results_with_null(int , int64_t **, int );
 
 #endif

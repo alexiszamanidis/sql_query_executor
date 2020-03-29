@@ -3,21 +3,28 @@
 relation::relation() {
     this->num_tuples = 0;
     this->tuples = NULL;
+    this->join_partition = NULL;
 }
 
 relation::relation(int number_of_tuples) {
     this->num_tuples = number_of_tuples;
-    this->tuples = (struct tuple *)malloc(number_of_tuples*sizeof(struct tuple));
+    this->tuples = my_malloc(struct tuple,number_of_tuples);
     error_handler(this->tuples == NULL, "malloc failed");
+    this->join_partition = NULL;
 }
 
 relation::~relation() {
-    free(this->tuples);
+    free_pointer(&this->tuples);
+    if( this->join_partition != NULL ) {
+        free_pointer(&this->join_partition->histogram);
+        free_pointer(&this->join_partition->prefix_sum);
+        free_pointer(&this->join_partition);
+    }
 }
 
 void relation::relation_initialize_random(int number_of_tuples) {
     this->num_tuples = number_of_tuples;
-    this->tuples = (struct tuple *)malloc(number_of_tuples*sizeof(struct tuple));
+    this->tuples = my_malloc(struct tuple,number_of_tuples);
     error_handler(this->tuples == NULL, "malloc failed");
     for( uint64_t i = 0 ; i < this->num_tuples ; i++ ) {
         this->tuples[i].row_id = i;
@@ -39,7 +46,7 @@ void relation::relation_initialize_with_dataset(char *filename) {
         number_of_tuples++;
 
     this->num_tuples = number_of_tuples;
-    this->tuples = (struct tuple *)malloc(number_of_tuples*sizeof(struct tuple));
+    this->tuples = my_malloc(struct tuple,number_of_tuples);
     error_handler(this->tuples == NULL, "malloc failed");
 
     // move the file pointer at the begining
@@ -53,13 +60,13 @@ void relation::relation_initialize_with_dataset(char *filename) {
         i++;
     }
 
-    free(line_buffer);
+    free_pointer(&line_buffer);
     fclose(dataset);
 }
 
 void relation::create_relation_from_file(struct file *file, int column){
     this->num_tuples = file->number_of_rows;
-    this->tuples = (struct tuple *)malloc(file->number_of_rows*sizeof(struct tuple));
+    this->tuples = my_malloc(struct tuple,file->number_of_rows);
     error_handler(this->tuples == NULL, "malloc failed");
     for( uint64_t i = 0 ; i < this->num_tuples ; i++ ) {
         this->tuples[i].row_id = i;
@@ -128,7 +135,7 @@ int relation::partition(int start, int end) {
     return i;
 }
 
-void relation::quick_sort(int start, int end) {
+inline void relation::quick_sort(int start, int end) {
     int partition_index;
 
     if( start < end ) {
@@ -201,12 +208,79 @@ inline int compare_tuples(const void *tuple_1, const void *tuple_2) {
     return ((struct tuple *)tuple_1)->value - ((struct tuple *)tuple_2)->value;
 }
 
+inline void quick_sort_job(void *arguments) {
+    struct quick_sort_arguments *quick_sort_arguments = (struct quick_sort_arguments *)arguments;
+    quick_sort_arguments->R->quick_sort(quick_sort_arguments->start,quick_sort_arguments->end);
+}
+
+uint64_t * sum_histograms(int64_t **thread_histograms, int rows, int columns, struct histogram_indexing *histogram_indexes) {
+    uint64_t *temp = (uint64_t*)calloc(BUCKET_SIZE,sizeof(uint64_t));
+    error_handler(temp == NULL, "calloc failed");
+    for( int i = 0 ; i < rows ; i++ ) {
+        for( int j = 0 ; j < columns ; j++ ) {
+            if( thread_histograms[i][j] == 0 )
+                continue;
+            if( temp[j] == 0 ) {
+                histogram_indexes->indexes[histogram_indexes->size] = j;
+                histogram_indexes->size++;
+            }
+            temp[j] = temp[j] + thread_histograms[i][j];
+        }
+    }
+    //insertion_sort(histogram_indexes->indexes,histogram_indexes->size);
+    return temp;
+}
+
+inline void create_histogram_for_multithread(void *arguments) {
+    struct histogram_arguments *histogram_arguments = (struct histogram_arguments *)arguments;
+    int hash_index;
+    for( uint64_t i = histogram_arguments->start ; i < histogram_arguments->end ; i++ ) {
+        hash_index = histogram_arguments->R->binary_mask(histogram_arguments->R->tuples[i].value, histogram_arguments->byte);
+        histogram_arguments->histogram[hash_index]++;
+    }
+}
+
+inline void break_histogram_to_jobs(relation *R, uint64_t start, uint64_t end, int byte,struct histogram_indexing *histogram_indexes, int64_t **thread_histograms, int *job_barrier) {
+    extern struct job_scheduler *job_scheduler;
+	int step = (end-start)/BREAK_HISTOGRAMS;
+    for( int i = 0 ; i < BREAK_HISTOGRAMS ; i++) {
+		struct histogram_arguments *histogram_arguments = my_malloc(struct histogram_arguments,1);
+        error_handler(histogram_arguments == NULL,"malloc failed");
+        histogram_arguments->R = R;
+        histogram_arguments->byte = byte;
+        histogram_arguments->start = start;
+        histogram_arguments->histogram = thread_histograms[i];
+        if( i == BREAK_HISTOGRAMS-1 )
+            histogram_arguments->end = end;
+        else
+            histogram_arguments->end = start + step;
+        schedule_job_scheduler(job_scheduler,create_histogram_for_multithread,histogram_arguments,job_barrier);
+        start = start + step;
+    }
+}
+
+inline uint64_t *create_histogram_multithread(relation *R, uint64_t start,uint64_t end, int byte, struct histogram_indexing *histogram_indexes) {
+    extern struct job_scheduler *job_scheduler;
+    int job_barrier = 0;
+    int64_t **thread_histograms = allocate_and_initialize_2d_array(BREAK_HISTOGRAMS,BUCKET_SIZE,0);
+    break_histogram_to_jobs(R,start,end,byte,histogram_indexes,thread_histograms,&job_barrier);
+    dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
+    uint64_t *histogram = sum_histograms(thread_histograms,BREAK_HISTOGRAMS,BUCKET_SIZE,histogram_indexes);
+    free_2d_array(&thread_histograms,BREAK_HISTOGRAMS);
+    if( histogram_indexes->size == 0 ) {
+        free_pointer(&histogram);
+        return NULL;
+    }
+    return histogram;
+}
+
 void sort_iterative(void *argument) {
+    extern struct job_scheduler *job_scheduler;
     struct sort_iterative_arguments *sort_iterative_arguments = (struct sort_iterative_arguments *)argument;
     relation *R = sort_iterative_arguments->R;
     relation R_new(R->num_tuples);
     uint64_t start = 0, end = R->num_tuples, *histogram, *prefix_sum;;
-    int byte = 1;
+    int byte = START_BYTE, job_barrier = 0;
     std::queue<struct sort_node> sort_data_list;
     struct sort_node sort_node;
     struct histogram_indexing histogram_indexes;
@@ -223,17 +297,30 @@ void sort_iterative(void *argument) {
         histogram_indexes.size = 0;
 
         // fix R_new sorted by current histogram and prefix sum
-        if( sort_node.byte%2 == 1 ) {
+        if( sort_node.byte%2 == MODULO ) {
             // fix histogram for reader R
+            //histogram = R->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             histogram = R->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
+            //histogram = create_histogram_multithread(R,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
             prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
+            // hold first histogram and prefix_sum
+            if( sort_node.byte == START_BYTE ) {
+                struct join_partition *join_partition = my_malloc(struct join_partition,1);
+                error_handler(join_partition == NULL,"malloc failed");
+                join_partition->histogram = histogram;
+                join_partition->histogram_indexes = histogram_indexes;
+                join_partition->prefix_sum = prefix_sum;
+                R->join_partition = join_partition;
+            }
             // R writes to R_new
             R->fill_new_relation(&R_new, prefix_sum, sort_node.start, sort_node.end, sort_node.byte);
         }
         else {
             // fix histogram for reader R_new
+            //histogram = R_new.create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             histogram = R_new.create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
+            //histogram = create_histogram_multithread(&R_new,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
             prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
             // R_new writes to R
@@ -246,11 +333,15 @@ void sort_iterative(void *argument) {
             // if the hash duplicates are less or equal to cache size then just do quick sort
             if( histogram[histogram_indexes.indexes[i]] <= DUPLICATES ) {
                 // if the byte % 2 == 1 memcpy R_new to R
-                if( sort_node.byte%2 == 1 )
+                if( sort_node.byte%2 == MODULO )
                     memcpy(R->tuples+start,R_new.tuples+start,(end-start)*sizeof(struct tuple));
                 // then do quick sort on R
-                qsort(R->tuples+start,end-start,sizeof(struct tuple),compare_tuples);
+                //qsort(R->tuples+start,end-start,sizeof(struct tuple),compare_tuples);
                 //R->quick_sort(start,end-1);
+                struct quick_sort_arguments *quick_sort_arguments = my_malloc(struct quick_sort_arguments,1);
+                error_handler(quick_sort_arguments == NULL,"malloc failed");
+                *quick_sort_arguments = { .R = R, .start = start, .end = end-1};
+                schedule_job_scheduler(job_scheduler,quick_sort_job,quick_sort_arguments,&job_barrier);
             }
             // if the hash duplicates are more than cache size then push {start,end,byte+1} to the list
             else {
@@ -259,7 +350,12 @@ void sort_iterative(void *argument) {
                     sort_data_list.push((struct sort_node){.start = start, .end = end, .byte = sort_node.byte+1});
             }
         }
-        free(histogram);
-        free(prefix_sum);
+        // do not free first histogram and prefix sum
+        if( sort_node.byte != START_BYTE) {
+            free_pointer(&histogram);
+            free_pointer(&prefix_sum);
+        }
     }
+    // wait all sorts to end
+    dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
 }

@@ -29,25 +29,25 @@ file_array::file_array() {
 
         this->files.push_back(new_file);
     }
-    free(filename);
+    free_pointer(&filename);
 }
 
 file_array::~file_array() {
     struct file *file;
     for( uint i = 0 ; i < this->files.size() ; i++) {
         file = this->files[i];
-        free(file->name);
-        free(file->array);
-        free(file);
+        free_pointer(&file->name);
+        free_pointer(&file->array);
+        free_pointer(&file);
     }
 }
 
 struct file *file_array::initialize_file(char *file, uint64_t number_of_rows, uint64_t number_of_columns) {
-    struct file *new_file = (struct file *)malloc(sizeof(struct file));
+    struct file *new_file = my_malloc(struct file,1);
     error_handler(new_file == NULL, "malloc failed");
-    new_file->name = (char *)malloc(strlen(file)*sizeof(char)+1);
+    new_file->name = my_malloc(char,strlen(file)+1);
     error_handler(new_file->name == NULL, "malloc failed");
-    new_file->array = (int64_t *)malloc( number_of_rows * number_of_columns * sizeof(uint64_t *));
+    new_file->array = my_malloc(int64_t,number_of_rows * number_of_columns);
     error_handler(new_file->array == NULL, "malloc failed");
     
     strcpy(new_file->name,file);

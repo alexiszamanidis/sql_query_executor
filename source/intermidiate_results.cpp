@@ -80,7 +80,8 @@ int *search_intermidiate_results(intermidiate_results *intermidiate_results_, in
     for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
         for( int j = 0 ; j < (int)intermidiate_results_->results[i]->content.size() ; j++ ) {
             if( intermidiate_results_->results[i]->content[j]->predicate_relation == predicate_relation ) {
-                intermidiate_indexes = (int *)malloc(2*sizeof(int));
+                intermidiate_indexes = my_malloc(int,2);
+                error_handler(intermidiate_indexes == NULL,"malloc failed");
                 intermidiate_indexes[0] = i;
                 intermidiate_indexes[1] = j;
                 return intermidiate_indexes;
@@ -116,9 +117,9 @@ bool join(file_array *file_array, intermidiate_results *intermidiate_results_, s
         return_value = both_relations_in_mid_results(file_array,intermidiate_results_,predicate,relations,intermidiate_result_index_a,intermidiate_result_index_b);
 
     if( intermidiate_result_index_a != NULL )
-        free(intermidiate_result_index_a);
+        free_pointer(&intermidiate_result_index_a);
     if( intermidiate_result_index_b != NULL )
-        free(intermidiate_result_index_b);
+        free_pointer(&intermidiate_result_index_b);
 
     return return_value;
 }
@@ -160,21 +161,21 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     }
 
     if( flag_r == false ) {
-        struct sort_iterative_arguments *sort_iterative_arguments_r = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
+        struct sort_iterative_arguments *sort_iterative_arguments_r = my_malloc(struct sort_iterative_arguments,1);
         error_handler(sort_iterative_arguments_r == NULL,"malloc failed");
         *sort_iterative_arguments_r = (struct sort_iterative_arguments){ .R = R };
         schedule_job_scheduler(job_scheduler,sort_iterative,sort_iterative_arguments_r,&job_barrier);
     //    sort_iterative(sort_iterative_arguments_r);
-    //    free(sort_iterative_arguments_r);
+    //    free_pointer(&sort_iterative_arguments_r);
     }
 
     if( flag_s == false ) {
-        struct sort_iterative_arguments *sort_iterative_arguments_s = (struct sort_iterative_arguments *)malloc(sizeof(struct sort_iterative_arguments));
+        struct sort_iterative_arguments *sort_iterative_arguments_s = my_malloc(struct sort_iterative_arguments,1);
         error_handler(sort_iterative_arguments_s == NULL,"malloc failed");
         *sort_iterative_arguments_s = (struct sort_iterative_arguments){ .R = S };
         schedule_job_scheduler(job_scheduler,sort_iterative,sort_iterative_arguments_s,&job_barrier);
     //    sort_iterative(sort_iterative_arguments_s);
-    //    free(sort_iterative_arguments_s);
+    //    free_pointer(&sort_iterative_arguments_s);
     }
 
     dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
@@ -517,7 +518,7 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
     }
 
     if( filter_index != NULL )
-        free(filter_index);
+        free_pointer(&filter_index);
 
     if( filter_results->row_ids.size() == 0 )
         return false;
@@ -533,7 +534,7 @@ void projection_sum_results_job(void *argument) {
     for( uint j = 0 ; j < intermidiate_content_->row_ids.size() ; j++ )
         sum = sum + file->array[projection_sum_results_arguments->column*file->number_of_rows+intermidiate_content_->row_ids[j]];
     projection_sum_results_arguments->results[projection_sum_results_arguments->result_index][projection_sum_results_arguments->result_column] = sum;
-    free(projection_sum_results_arguments->intermidiate_result_index);
+    free_pointer(&projection_sum_results_arguments->intermidiate_result_index);
 }
 
 void projection_sum_results(file_array *file_array, intermidiate_results *intermidiate_results_, sql_query *sql_query_, int64_t **results, int result_index) {
@@ -552,13 +553,13 @@ void projection_sum_results(file_array *file_array, intermidiate_results *interm
         }
         
         //projection_sum_results_job(NULL);
-        struct projection_sum_results_arguments *projection_sum_results_arguments = (struct projection_sum_results_arguments *)malloc(sizeof(struct projection_sum_results_arguments));
+        struct projection_sum_results_arguments *projection_sum_results_arguments = my_malloc(struct projection_sum_results_arguments,1);
         error_handler(projection_sum_results_arguments == NULL,"malloc failed");
         *projection_sum_results_arguments = (struct projection_sum_results_arguments){  .file_array_ = file_array, .file_index = file_index, .intermidiate_results_ = intermidiate_results_, .intermidiate_result_index = intermidiate_result_index, \
                                                                                         .results = results, .result_index = result_index, .column = column, .result_column = i };
         schedule_job_scheduler(job_scheduler,projection_sum_results_job,projection_sum_results_arguments,&job_barrier);
     //    projection_sum_results_job(projection_sum_results_arguments);
-    //    free(projection_sum_results_arguments);
+    //    free_pointer(&projection_sum_results_arguments);
     }
     dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
 }
@@ -598,7 +599,7 @@ void execute_query(void *argument) {
 
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
-//    free(execute_query_arguments);
+//    free_pointer(&execute_query_arguments);
 }
 
 void read_queries(file_array *file_array) {
@@ -622,13 +623,13 @@ void read_queries(file_array *file_array) {
 
             sql_query *sql_query_ = new sql_query(query);
 
-            struct execute_query_arguments *execute_query_arguments = (struct execute_query_arguments *)malloc(sizeof(struct execute_query_arguments));
+            struct execute_query_arguments *execute_query_arguments = my_malloc(struct execute_query_arguments,1);
             error_handler(execute_query_arguments == NULL,"malloc failed");
             *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
         //    job_scheduler->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
             schedule_job_scheduler(job_scheduler,execute_query,execute_query_arguments,&job_barrier);
         //    execute_query(execute_query_arguments);
-        //    free(execute_query_arguments);
+        //    free_pointer(&execute_query_arguments);
 
             result_index++;
         }
@@ -641,31 +642,8 @@ void read_queries(file_array *file_array) {
         if( stop == true )
             break;
     }
-    free(query);
+    free_pointer(&query);
     free_2d_array(&results,RESULTS_ROWS);
-}
-
-int64_t **allocate_and_initialize_2d_array(int rows, int columns, int initialize_number) {
-    int64_t **array = (int64_t **)malloc(rows*sizeof(int64_t *));
-    error_handler(array == NULL,"malloc failed");
-    for( int i=0 ; i < rows ; i++ ) {
-        array[i] = (int64_t *)malloc(columns*sizeof(int64_t));
-        error_handler(array[i] == NULL,"malloc failed");
-    }
-
-    for ( int i = 0 ; i <  rows ; i++ )
-        for ( int j = 0 ; j < columns ; j++ )
-            array[i][j] = initialize_number;
-
-    return array;
-}
-
-void print_2d_array(int64_t **array, int rows, int columns) {
-    for( int i = 0 ; i < rows ; i ++) {
-        for( int j = 0 ; j < columns ; j++)
-            std::cout << array[i][j] << " " << std::endl;
-        std::cout << std::endl;
-    }
 }
 
 void print_2d_array_results(int64_t **array, int rows, int columns) {
@@ -681,12 +659,6 @@ void print_2d_array_results(int64_t **array, int rows, int columns) {
         }
         std::cout << std::endl;
     }
-}
-
-void free_2d_array(int64_t ***array, int rows) {
-    for( int i = 0 ; i < rows; i++ )
-        free((*array)[i]);
-    free(*array);
 }
 
 void inform_results_with_null(int number_of_nulls, int64_t **results, int result_index) {
