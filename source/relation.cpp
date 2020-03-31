@@ -90,7 +90,7 @@ unsigned char relation::binary_mask(uint64_t value, int byte) {
 
 uint64_t *relation::create_histogram(uint64_t start, uint64_t end, int byte,struct histogram_indexing *histogram_indexes) {
     int hash_index;
-    uint64_t *temp= (uint64_t*)calloc(BUCKET_SIZE, sizeof(uint64_t));
+    uint64_t *temp= my_calloc(uint64_t,BUCKET_SIZE);
     error_handler(temp == NULL, "calloc failed");
 
     for( uint64_t i = start ; i <end ; i++ ) {
@@ -107,7 +107,7 @@ uint64_t *relation::create_histogram(uint64_t start, uint64_t end, int byte,stru
 
 uint64_t *relation::create_prefix_sum(uint64_t *histogram, uint64_t start) {
     int sum = start;
-    uint64_t *temp = (uint64_t*)calloc(BUCKET_SIZE, sizeof(uint64_t));
+    uint64_t *temp = my_calloc(uint64_t,BUCKET_SIZE);
     error_handler(temp == NULL, "calloc failed");
 
     for( int i = 0 ; i < BUCKET_SIZE ; i++ ) {
@@ -218,7 +218,7 @@ inline void quick_sort_job(void *arguments) {
 }
 
 uint64_t * sum_histograms(int64_t **thread_histograms, int rows, int columns, struct histogram_indexing *histogram_indexes) {
-    uint64_t *temp = (uint64_t*)calloc(BUCKET_SIZE,sizeof(uint64_t));
+    uint64_t *temp = my_calloc(uint64_t,BUCKET_SIZE);
     error_handler(temp == NULL, "calloc failed");
     for( int i = 0 ; i < rows ; i++ ) {
         for( int j = 0 ; j < columns ; j++ ) {
@@ -246,9 +246,9 @@ inline void create_histogram_for_multithread(void *arguments) {
 
 inline void break_histogram_to_jobs(relation *R, uint64_t start, uint64_t end, int byte,struct histogram_indexing *histogram_indexes, int64_t **thread_histograms, int *job_barrier) {
     extern struct job_scheduler *job_scheduler;
-	int step = (end-start)/BREAK_HISTOGRAMS;
+    int step = (end-start)/BREAK_HISTOGRAMS;
     for( int i = 0 ; i < BREAK_HISTOGRAMS ; i++) {
-		struct histogram_arguments *histogram_arguments = my_malloc(struct histogram_arguments,1);
+        struct histogram_arguments *histogram_arguments = my_malloc(struct histogram_arguments,1);
         error_handler(histogram_arguments == NULL,"malloc failed");
         histogram_arguments->R = R;
         histogram_arguments->byte = byte;

@@ -151,7 +151,6 @@ void sql_query::sort_by_frequency() {
         it->second = it->second-1;
     }
 
-
     uint swap_index = 0, i;
     // optimize query by swapping the predicates
     for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it) {
@@ -179,5 +178,4 @@ void sql_query::sort_by_frequency() {
             frequency++;
         }
     }
-
 }

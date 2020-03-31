@@ -15,11 +15,9 @@ int64_t **allocate_2d_array(int64_t rows, int64_t columns) {
 
 int64_t **allocate_and_initialize_2d_array(int rows, int columns, int initialize_number) {
     int64_t **array = allocate_2d_array(rows,columns);
-
     for ( int i = 0 ; i <  rows ; i++ )
         for ( int j = 0 ; j < columns ; j++ )
             array[i][j] = initialize_number;
-
     return array;
 }
 
