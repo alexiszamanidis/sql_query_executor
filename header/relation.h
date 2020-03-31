@@ -45,6 +45,7 @@ class relation {
         relation();
         relation(int );
         ~relation();
+        void free_join_partition();
         void relation_initialize_random(int);
         void relation_initialize_with_dataset(char *);
         void create_relation_from_file(struct file *, int );
@@ -79,9 +80,27 @@ struct histogram_arguments {
     int64_t *histogram;
 };
 
+struct parallel_join_arguments {
+    struct relation * R;
+    struct relation * S;
+    results * list;
+    int start_R;
+    int end_R;
+    int start_S;
+    int end_S;
+};
+
 void parallel_join(relation *, relation *, results *);
 inline int compare_tuples(const void *, const void *);
-void sort_iterative(void *);
+void quick_sort_job(void *);
+uint64_t * sum_histograms(int64_t **, int , int , struct histogram_indexing *);
+void create_histogram_for_multithread(void *);
+void break_histogram_to_jobs(relation *, uint64_t , uint64_t , int ,struct histogram_indexing *, int64_t **, int *);
 uint64_t *create_histogram_multithread(relation *, uint64_t ,uint64_t , int , struct histogram_indexing *);
+void sort_iterative(void *);
+void get_range_multithread(relation *, int64_t , int64_t *, int64_t );
+void parallel_join_multithread(void *);
+void fix_thread_list_results_links(results **, results *, int );
+void break_join_to_jobs(relation **, relation **, results *, struct join_partition *, struct join_partition *);
 
 #endif

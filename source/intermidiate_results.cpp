@@ -136,29 +136,36 @@ relation *create_relation_from_intermidiate_results_for_join(struct file *file, 
     return R;
 }
 
+void calculate_join_partition(relation *R) {
+    struct histogram_indexing histogram_indexes;
+    histogram_indexes.size = 0;
+    struct join_partition *join_partition = my_malloc(struct join_partition,1);
+    error_handler(join_partition == NULL,"malloc failed");
+    join_partition->histogram = R->create_histogram(0,R->num_tuples,START_BYTE,&histogram_indexes);;
+    join_partition->histogram_indexes = histogram_indexes;
+    join_partition->prefix_sum = R->create_prefix_sum(join_partition->histogram,0);;
+    R->join_partition = join_partition;
+}
+
 results *sort_join_calculation(relation *R, relation *S, intermidiate_results *intermidiate_results_, std::vector<int> predicate) {
     extern struct job_scheduler *job_scheduler;
     bool flag_r = false, flag_s = false;
     int job_barrier = 0;
     results *results_ = new results();
 
-    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
-        for( int j = 0 ; j < 2 ; j++ ) {
+    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ )
+        for( int j = 0 ; j < 2 ; j++ )
             if((intermidiate_results_->results[i]->sorted_relations[j] == predicate[RELATION_A]) && (intermidiate_results_->results[i]->sorted_relation_columns[j] == predicate[COLUMN_A])) {
                 flag_r = true;
                 break;
             }
-        }
-    }
 
-    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ ) {
-        for( int j = 0 ; j < 2 ; j++ ) {
+    for( int i = 0 ; i < (int)intermidiate_results_->results.size() ; i++ )
+        for( int j = 0 ; j < 2 ; j++ )
             if((intermidiate_results_->results[i]->sorted_relations[j] == predicate[RELATION_B]) && (intermidiate_results_->results[i]->sorted_relation_columns[j] == predicate[COLUMN_B])) {
                 flag_s = true;
                 break;
             }
-        }
-    }
 
     if( flag_r == false ) {
         struct sort_iterative_arguments *sort_iterative_arguments_r = my_malloc(struct sort_iterative_arguments,1);
@@ -168,6 +175,8 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     //    sort_iterative(sort_iterative_arguments_r);
     //    free_pointer(&sort_iterative_arguments_r);
     }
+    else
+        calculate_join_partition(R);
 
     if( flag_s == false ) {
         struct sort_iterative_arguments *sort_iterative_arguments_s = my_malloc(struct sort_iterative_arguments,1);
@@ -177,10 +186,16 @@ results *sort_join_calculation(relation *R, relation *S, intermidiate_results *i
     //    sort_iterative(sort_iterative_arguments_s);
     //    free_pointer(&sort_iterative_arguments_s);
     }
+    else
+        calculate_join_partition(S);
 
     dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
 
-    parallel_join(R,S,results_);
+    //parallel_join(R,S,results_);                                              // parallel join between relations
+    break_join_to_jobs(&R,&S,results_,R->join_partition,S->join_partition);     // multithread join
+
+    R->free_join_partition();
+    S->free_join_partition();
 
     return results_;
 }

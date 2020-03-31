@@ -65,6 +65,7 @@ int *search_intermidiate_results(intermidiate_results *, int64_t );
 void flip_predicate(std::vector<int> &);
 bool join(file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 relation *create_relation_from_intermidiate_results_for_join(struct file *, intermidiate_results *, int *, int );
+void calculate_join_partition(relation *);
 results *sort_join_calculation(relation *, relation *, intermidiate_results *, std::vector<int> );
 bool none_relation_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> );
 bool both_relations_in_mid_results(struct file_array *, intermidiate_results *, std::vector<int> , std::vector<int> , int *, int *);

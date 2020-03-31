@@ -15,10 +15,14 @@ relation::relation(int number_of_tuples) {
 
 relation::~relation() {
     free_pointer(&this->tuples);
-    if( this->join_partition != NULL ) {
-        free_pointer(&this->join_partition->histogram);
-        free_pointer(&this->join_partition->prefix_sum);
-        free_pointer(&this->join_partition);
+    this->free_join_partition();
+}
+
+void relation::free_join_partition() {
+    if( (join_partition) != NULL ) {
+        free_pointer(&join_partition->histogram);
+        free_pointer(&join_partition->prefix_sum);
+        free_pointer(&join_partition);
     }
 }
 
@@ -97,7 +101,7 @@ uint64_t *relation::create_histogram(uint64_t start, uint64_t end, int byte,stru
             histogram_indexes->size++;
         }
     }
-
+    std::sort(histogram_indexes->indexes,histogram_indexes->indexes+histogram_indexes->size);
     return temp;
 }
 
@@ -227,7 +231,7 @@ uint64_t * sum_histograms(int64_t **thread_histograms, int rows, int columns, st
             temp[j] = temp[j] + thread_histograms[i][j];
         }
     }
-    //insertion_sort(histogram_indexes->indexes,histogram_indexes->size);
+    std::sort(histogram_indexes->indexes,histogram_indexes->indexes+histogram_indexes->size);
     return temp;
 }
 
@@ -300,8 +304,7 @@ void sort_iterative(void *argument) {
         if( sort_node.byte%2 == MODULO ) {
             // fix histogram for reader R
             //histogram = R->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
-            histogram = R->create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
-            //histogram = create_histogram_multithread(R,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
+            histogram = create_histogram_multithread(R,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
             prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
             // hold first histogram and prefix_sum
@@ -319,8 +322,7 @@ void sort_iterative(void *argument) {
         else {
             // fix histogram for reader R_new
             //histogram = R_new.create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
-            histogram = R_new.create_histogram(sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
-            //histogram = create_histogram_multithread(&R_new,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
+            histogram = create_histogram_multithread(&R_new,sort_node.start,sort_node.end,sort_node.byte,&histogram_indexes);
             // fix prefix sum
             prefix_sum = R->create_prefix_sum(histogram,sort_node.start);
             // R_new writes to R
@@ -358,4 +360,107 @@ void sort_iterative(void *argument) {
     }
     // wait all sorts to end
     dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
+}
+
+void get_range_multithread(relation *R, int64_t start, int64_t *end, int64_t finish) {
+    // calculate the range
+    while( *end != finish )
+        if( (*end+1 != finish)&&(R->tuples[start].value == R->tuples[*end+1].value) )
+            (*end)++;
+        else
+            return;
+}
+
+void parallel_join_multithread(void *argumnets) {
+    struct parallel_join_arguments *parallel_join_arguments = (struct parallel_join_arguments *)argumnets;
+    int64_t index_R_start = parallel_join_arguments->start_R, index_S_start = parallel_join_arguments->start_S;
+    int64_t index_R_end = parallel_join_arguments->start_R, index_S_end = parallel_join_arguments->start_S, i, j;
+    int64_t finish_R = parallel_join_arguments->end_R, finish_S = parallel_join_arguments->end_S;
+    relation * R = parallel_join_arguments->R;
+    relation * S = parallel_join_arguments->S;
+    results * results = parallel_join_arguments->list;
+
+    while( ( index_R_start != finish_R ) && ( index_S_start != finish_S ) ){
+        // calculate R's range
+        get_range_multithread(R,index_R_start,&index_R_end,finish_R);
+        // calculate S's range
+        get_range_multithread(S,index_S_start,&index_S_end,finish_S);
+        // if the value is the same then do a double loop and insert all the row id into the list
+        if( R->tuples[index_R_start].value == S->tuples[index_S_start].value ) {
+            for( i = index_R_start ; i <= index_R_end ; i++ )
+                for( j = index_S_start ; j <= index_S_end ; j++ )
+                    results->insert_tuple(R->get_tuple_row_id(i), S->get_tuple_row_id(j));
+            // also move R pointer
+            index_R_start = index_R_end + 1;
+            index_R_end = index_R_start;
+        }
+        // if R's value is less than S's value then move R pointer
+        else if( R->tuples[index_R_start].value < S->tuples[index_S_start].value ) {
+            index_R_start = index_R_end + 1;
+            index_R_end = index_R_start;
+        }
+        // if S's value is less than R's value then move R pointer
+        else {
+            index_S_start = index_S_end + 1;
+            index_S_end = index_S_start;
+        };
+    }
+}
+
+void fix_thread_list_results_links(results **thread_list_results, results *list_results, int number_of_rows) {
+    for( int i = 0 ; i < number_of_rows ; i ++ ) {
+        if( list_results->head == NULL ) {
+            list_results->head = thread_list_results[i]->head;
+            list_results->tail = thread_list_results[i]->tail;
+        }
+        else {
+            list_results->tail->next_bucket = thread_list_results[i]->head;
+            list_results->tail = thread_list_results[i]->tail;
+        }
+        list_results->total_size = list_results->total_size + thread_list_results[i]->total_size;
+        list_results->number_of_buckets = list_results->number_of_buckets + thread_list_results[i]->number_of_buckets;
+        thread_list_results[i]->head = NULL;
+    }
+}
+
+void break_join_to_jobs(relation **R, relation **S, results *list_results, struct join_partition *join_partition_R, struct join_partition *join_partition_S) {
+    extern struct job_scheduler *job_scheduler;
+    results **thread_list_results = NULL;
+    int number_of_rows = 0, index_R = 0, index_S = 0, index_list_results = 0,start_R, end_R, start_S, end_S, join_barrier = 0;
+
+    if( join_partition_R->histogram_indexes.size <= join_partition_S->histogram_indexes.size )
+        number_of_rows = join_partition_R->histogram_indexes.size;
+    else
+        number_of_rows = join_partition_S->histogram_indexes.size;
+
+    thread_list_results = initialize_2d_results(number_of_rows);
+
+    // break join to jobs
+    while( ( index_R < join_partition_R->histogram_indexes.size ) && ( index_S < join_partition_S->histogram_indexes.size ) ) {
+        if( join_partition_R->histogram_indexes.indexes[index_R] == join_partition_S->histogram_indexes.indexes[index_S] ) {
+            start_R = join_partition_R->prefix_sum[join_partition_R->histogram_indexes.indexes[index_R]];
+            end_R = join_partition_R->prefix_sum[join_partition_R->histogram_indexes.indexes[index_R]]+join_partition_R->histogram[join_partition_R->histogram_indexes.indexes[index_R]];
+            start_S = join_partition_S->prefix_sum[join_partition_S->histogram_indexes.indexes[index_S]];
+            end_S = join_partition_S->prefix_sum[join_partition_S->histogram_indexes.indexes[index_S]]+join_partition_S->histogram[join_partition_S->histogram_indexes.indexes[index_S]];
+
+            struct parallel_join_arguments *parallel_join_arguments = my_malloc(struct parallel_join_arguments,1);
+            error_handler(parallel_join_arguments == NULL,"malloc failed");
+            parallel_join_arguments->R = *R; parallel_join_arguments->S = *S; parallel_join_arguments->list = thread_list_results[index_list_results];
+            parallel_join_arguments->start_R = start_R; parallel_join_arguments->end_R = end_R; parallel_join_arguments->start_S = start_S; parallel_join_arguments->end_S = end_S;
+            schedule_job_scheduler(job_scheduler,parallel_join_multithread,parallel_join_arguments,&join_barrier);
+            
+            index_R++;
+            index_list_results++;
+        }
+        else if( join_partition_R->histogram_indexes.indexes[index_R] < join_partition_S->histogram_indexes.indexes[index_S] )
+            index_R++;
+        else
+            index_S++;
+    }
+    // wait all joins to end
+    dynamic_barrier_job_scheduler(job_scheduler,&join_barrier);
+
+    fix_thread_list_results_links(thread_list_results,list_results,number_of_rows);
+
+    free_2d_results(thread_list_results,number_of_rows);
 }

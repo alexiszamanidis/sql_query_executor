@@ -31,4 +31,8 @@ class results {
         struct bucket *results_initialize_bucket();
 };
 
+results **initialize_2d_results(int );
+void print_2d_results(results **, int );
+void free_2d_results(results **, int );
+
 #endif

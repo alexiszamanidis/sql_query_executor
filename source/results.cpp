@@ -72,3 +72,22 @@ struct bucket *results::results_initialize_bucket() {
 
     return new_bucket;
 }
+
+results **initialize_2d_results(int rows) {
+    results **thread_list_results = my_malloc(results *,rows);
+    error_handler(thread_list_results == NULL,"malloc failed");
+    for ( int i = 0 ; i < rows ; i++ )
+        thread_list_results[i] = new results();
+    return thread_list_results;
+}
+
+void print_2d_results(results **thread_list_results, int rows) {
+    for( int i = 0 ; i < rows ; i ++ )
+        thread_list_results[i]->results_print();
+}
+
+void free_2d_results(results **thread_list_results, int rows) {
+    for( int i = 0 ; i < rows; i++ )
+        delete thread_list_results[i];
+    free_pointer(&thread_list_results);
+}
