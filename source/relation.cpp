@@ -74,7 +74,7 @@ void relation::create_relation_from_file(struct file *file, int column){
     error_handler(this->tuples == NULL, "malloc failed");
     for( uint64_t i = 0 ; i < this->num_tuples ; i++ ) {
         this->tuples[i].row_id = i;
-        this->tuples[i].value = file->array[column*file->number_of_rows + i];
+        this->tuples[i].value = file->array[i][column];
     }
 }
 
@@ -270,7 +270,7 @@ inline uint64_t *create_histogram_multithread(relation *R, uint64_t start,uint64
     break_histogram_to_jobs(R,start,end,byte,histogram_indexes,thread_histograms,&job_barrier);
     dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
     uint64_t *histogram = sum_histograms(thread_histograms,BREAK_HISTOGRAMS,BUCKET_SIZE,histogram_indexes);
-    free_2d_array(&thread_histograms,BREAK_HISTOGRAMS);
+    free_2d_array(&thread_histograms);
     if( histogram_indexes->size == 0 ) {
         free_pointer(&histogram);
         return NULL;

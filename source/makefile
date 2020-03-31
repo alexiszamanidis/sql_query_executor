@@ -35,7 +35,7 @@ intermidiate_results.o: intermidiate_results.cpp
 	$(CC) $(CFLAGS) -c intermidiate_results.cpp
 
 usage:
-	@echo 'Usage of project: valgrind ./project < ../inputfile/input_file_small'
+	@echo 'Usage of project: valgrind ./project < ../inputfiles/inputfile_small'
 
 clean:
 	rm $(RMFLAGS) $(EXEC) $(OBJS)

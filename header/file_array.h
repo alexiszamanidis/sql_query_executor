@@ -2,12 +2,13 @@
 #define file_array_h_
 
 #include "./header.h"
+#include "./utilities.h"
 
 struct file {
     char *name;
     uint64_t number_of_rows;
     uint64_t number_of_columns;
-    int64_t *array;
+    int64_t **array;
 };
 
 class file_array {

@@ -130,7 +130,7 @@ relation *create_relation_from_intermidiate_results_for_join(struct file *file, 
 
     for( uint64_t i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ ) {
         R->tuples[i].row_id = i;
-        R->tuples[i].value = file->array[column*file->number_of_rows+intermidiate_content_results->row_ids[i]];
+        R->tuples[i].value = file->array[intermidiate_content_results->row_ids[i]][column];
     }
 
     return R;
@@ -478,23 +478,23 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
         filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A],file->number_of_rows);
         if( operator_ == EQUAL ) {
             for( uint i = 0 ; i < file->number_of_rows ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] == filter_number )
+                if( column_b == -1 && file->array[i][column_a] == filter_number )
                     filter_results->row_ids.push_back(i);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] == file->array[column_b*file->number_of_rows + i] )
+                else if( column_b != -1 && file->array[i][column_a] == file->array[i][column_b] )
                     filter_results->row_ids.push_back(i);
         }
         else if( operator_ == GREATER ) {
             for( uint i = 0 ; i < file->number_of_rows ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] > filter_number )
+                if( column_b == -1 && file->array[i][column_a] > filter_number )
                     filter_results->row_ids.push_back(i);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] > file->array[column_b*file->number_of_rows + i] )
+                else if( column_b != -1 && file->array[i][column_a] > file->array[i][column_b] )
                     filter_results->row_ids.push_back(i);
         }
         else {	// LESS
             for( uint i = 0 ; i < file->number_of_rows ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows + i] < filter_number )
+                if( column_b == -1 && file->array[i][column_a] < filter_number )
                     filter_results->row_ids.push_back(i);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows + i] < file->array[column_b*file->number_of_rows + i] )
+                else if( column_b != -1 && file->array[i][column_a] < file->array[i][column_b] )
                     filter_results->row_ids.push_back(i);
         }
         intermidiate_result_ = new intermidiate_result();
@@ -507,23 +507,23 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
         filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A],intermidiate_content_results->row_ids.size());
         if( operator_ == EQUAL ) {
             for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] == filter_number )
+                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] == filter_number )
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] == file->array[column_b*file->number_of_rows+intermidiate_content_results->row_ids[i]])
+                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] == file->array[intermidiate_content_results->row_ids[i]][column_b])
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
         }
         else if( operator_ == GREATER ) {
             for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] > filter_number )
+                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] > filter_number )
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] > file->array[column_b*file->number_of_rows+intermidiate_content_results->row_ids[i]])
+                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] > file->array[intermidiate_content_results->row_ids[i]][column_b])
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
         }
         else {	// LESS
             for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] < filter_number )
+                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] < filter_number )
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[column_a*file->number_of_rows+intermidiate_content_results->row_ids[i]] < file->array[column_b*file->number_of_rows+intermidiate_content_results->row_ids[i]])
+                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] < file->array[intermidiate_content_results->row_ids[i]][column_b])
                     filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
         }
 
@@ -547,7 +547,7 @@ void projection_sum_results_job(void *argument) {
     struct file *file = projection_sum_results_arguments->file_array_->files[projection_sum_results_arguments->file_index];
     intermidiate_content *intermidiate_content_ = projection_sum_results_arguments->intermidiate_results_->results[projection_sum_results_arguments->intermidiate_result_index[0]]->content[projection_sum_results_arguments->intermidiate_result_index[1]];
     for( uint j = 0 ; j < intermidiate_content_->row_ids.size() ; j++ )
-        sum = sum + file->array[projection_sum_results_arguments->column*file->number_of_rows+intermidiate_content_->row_ids[j]];
+        sum = sum + file->array[intermidiate_content_->row_ids[j]][projection_sum_results_arguments->column];
     projection_sum_results_arguments->results[projection_sum_results_arguments->result_index][projection_sum_results_arguments->result_column] = sum;
     free_pointer(&projection_sum_results_arguments->intermidiate_result_index);
 }
@@ -641,7 +641,6 @@ void read_queries(file_array *file_array) {
             struct execute_query_arguments *execute_query_arguments = my_malloc(struct execute_query_arguments,1);
             error_handler(execute_query_arguments == NULL,"malloc failed");
             *execute_query_arguments = (struct execute_query_arguments){ .file_array_ = file_array, .sql_query_ = sql_query_, .results = results, .result_index = result_index};
-        //    job_scheduler->schedule_job_scheduler(execute_query,execute_query_arguments,&job_barrier);
             schedule_job_scheduler(job_scheduler,execute_query,execute_query_arguments,&job_barrier);
         //    execute_query(execute_query_arguments);
         //    free_pointer(&execute_query_arguments);
@@ -650,7 +649,6 @@ void read_queries(file_array *file_array) {
         }
         // wait until the whole batch ends
         dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);
-    //    job_scheduler->dynamic_barrier_job_scheduler(&job_barrier);
         // print batch results
         print_2d_array_results(results,result_index,RESULTS_COLUMNS);
         // if all batches were executed, leave
@@ -658,7 +656,7 @@ void read_queries(file_array *file_array) {
             break;
     }
     free_pointer(&query);
-    free_2d_array(&results,RESULTS_ROWS);
+    free_2d_array(&results);
 }
 
 void print_2d_array_results(int64_t **array, int rows, int columns) {

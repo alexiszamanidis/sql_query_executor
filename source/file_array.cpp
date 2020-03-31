@@ -24,8 +24,9 @@ file_array::file_array() {
         // create new file node
         struct file *new_file = initialize_file(filename,number_of_rows,number_of_columns);
         // get the values from binary file and fix the file array
-        for( uint i = 2 ; i <sb.st_size/sizeof *value ; i++)
-            new_file->array[i-2] = value[i];
+        for( uint j = 0 ; j < number_of_columns ; j++ )
+            for( uint i = 0 ; i < number_of_rows ; i++ )
+                new_file->array[i][j] = value[j*number_of_rows+i+2];
 
         this->files.push_back(new_file);
     }
@@ -37,7 +38,7 @@ file_array::~file_array() {
     for( uint i = 0 ; i < this->files.size() ; i++) {
         file = this->files[i];
         free_pointer(&file->name);
-        free_pointer(&file->array);
+        free_2d_array(&file->array);
         free_pointer(&file);
     }
 }
@@ -47,8 +48,7 @@ struct file *file_array::initialize_file(char *file, uint64_t number_of_rows, ui
     error_handler(new_file == NULL, "malloc failed");
     new_file->name = my_malloc(char,strlen(file)+1);
     error_handler(new_file->name == NULL, "malloc failed");
-    new_file->array = my_malloc(int64_t,number_of_rows * number_of_columns);
-    error_handler(new_file->array == NULL, "malloc failed");
+    new_file->array = allocate_2d_array(number_of_rows,number_of_columns);
     
     strcpy(new_file->name,file);
     new_file->number_of_rows = number_of_rows;
@@ -65,7 +65,7 @@ void file_array::print_file_array() {
         printf("filename = %s, number of rows = %ld, number of columns = %ld\n", file->name,file->number_of_rows,file->number_of_columns);
         for( uint k = 0 ; k < file->number_of_rows ; k++ ) {
             for( uint l = 0 ; l < file->number_of_columns ; l++ )
-                printf("%ld ",file->array[ l*file->number_of_columns + k ]);
+                printf("%ld ",file->array[k][l]);
             printf("\n");
         }
     }
