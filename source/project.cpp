@@ -10,7 +10,7 @@ struct job_scheduler *job_scheduler = initialize_job_scheduler(3);
 
 int main(int argc, char **argv) {
     struct timespec begin, end;
-    double time_spent;
+    double time;
 
     file_array *file_array_ = new file_array();
 
@@ -18,9 +18,8 @@ int main(int argc, char **argv) {
     read_queries(file_array_);
     clock_gettime(CLOCK_MONOTONIC, &end);
 
-    time_spent = (end.tv_sec - begin.tv_sec);
-    time_spent = time_spent + (end.tv_nsec-begin.tv_nsec)/1000000000.0;
-    printf("Execution time = %f\n",time_spent);
+    time_spent(time,begin,end);
+    printf("Execution time = %f\n",time);
 
     barrier_job_scheduler(job_scheduler);
     free_job_scheduler(job_scheduler);

@@ -49,4 +49,10 @@
         memcpy(&x,swap_temp,sizeof(x));                                             \
     } while(0)
 
+#define time_spent(time,begin,end)                                          \
+    do {                                                                    \
+        time = (end.tv_sec - begin.tv_sec);                                 \
+        time = time + (end.tv_nsec-begin.tv_nsec)/1000000000.0;             \
+    } while (0)
+
 #endif
