@@ -28,44 +28,40 @@ void sql_query::parse_relation_query(char *relation_string) {
 // if next predicate is 0.1>30 we will have                 |0,1,1,30,-1|   |0,1,1,30,-1|
 // if next predicate is 1.2<40 we will have                                 |1,2,2,40,-1|
 void sql_query::parse_predicate_query(char *predicate_string) {
-    char *token_1 = NULL, *token_2 = NULL;
+    char *token = NULL;
     int row_1, column_1, row_2, column_2, i, operator_int = 0;
     char operator_string[]=" ";
-    while ( (token_1 = strtok_r(predicate_string, "&", &predicate_string)) != NULL ) {
-        i = 0;
-        while( token_1[i] != '\0' ) {
-            if( token_1[i] == '=' ) {
-                operator_string[0] = token_1[i];
+    while( (token = strtok_r(predicate_string, "&", &predicate_string)) != NULL ) {
+        for( i = 0 ; token[i] != '\0' ; i++ ) {
+            if( token[i] == '=' ) {
+                operator_string[0] = token[i];
                 operator_int = EQUAL;
                 break;
             }
-            else if( token_1[i] == '>' ) {
-                operator_string[0] = token_1[i];
+            else if( token[i] == '>' ) {
+                operator_string[0] = token[i];
                 operator_int = GREATER;
                 break;
             }
-            else if( token_1[i] == '<' ) {
-                operator_string[0] = token_1[i];
+            else if( token[i] == '<' ) {
+                operator_string[0] = token[i];
                 operator_int = LESS;
                 break;
             }
-            i++;
         }
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row_1 = atoi(token_2);
-        token_2 = strtok_r(token_1, operator_string, &token_1);
-        column_1 = atoi(token_2);
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row_2 = atoi(token_2);
-        token_2 = strtok_r(token_1, "", &token_1);
+        row_1 = atoi(strtok_r(token, ".", &token));
+        column_1 =  atoi(strtok_r(token, operator_string, &token));
+        row_2 = atoi(strtok_r(token, ".", &token));
+        token = strtok_r(token, "", &token);
 
-        // if token_2 is NULL it means that we have a filter, so the column_2 will be -1
-        if( token_2 == NULL )
+        // if token is NULL it means that we have a filter, so the column_2 will be -1
+        if( token == NULL )
             column_2 = -1;
         else
-            column_2 = atoi(token_2);
+            column_2 = atoi(token);
 
         std::vector<int> predicate;
+        predicate.reserve(5);
         predicate.push_back(row_1);
         predicate.push_back(column_1);
         predicate.push_back(operator_int);
@@ -81,15 +77,14 @@ void sql_query::parse_predicate_query(char *predicate_string) {
 // if the projection is 0.0, we will have   [0,0]   |0 0|
 // if next projection is 1.2 we will have           |1 2|
 void sql_query::parse_projection_query(char * projection_string) {
-    char *token_1 = NULL, *token_2 = NULL;
+    char *token = NULL;
     int row, column;
-    while ( (token_1 = strtok_r(projection_string, " ", &projection_string)) != NULL ) {
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row = atoi(token_2);
-        token_2 = strtok_r(token_1, ".", &token_1);
-        column = atoi(token_2);
+    while ( (token = strtok_r(projection_string, " ", &projection_string)) != NULL ) {
+        row = atoi(strtok_r(token, ".", &token));
+        column = atoi(strtok_r(token, ".", &token));
         
         std::vector<int> projection;
+        projection.reserve(2);
         projection.push_back(row);
         projection.push_back(column);
         this->projections.push_back(projection);

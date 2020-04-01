@@ -34,7 +34,6 @@ void intermidiate_result::inform_intermidiate_result_sort_fields(std::vector<int
 intermidiate_result::~intermidiate_result() {
     intermidiate_content *intermidiate_content_ = NULL;
     int content_size = this->content.size();
-
     for( int j = 0 ; j < content_size ; j++ ) {
         intermidiate_content_ = this->content[0];
         this->content.erase(this->content.begin());
@@ -49,7 +48,6 @@ intermidiate_results::intermidiate_results() {
 intermidiate_results::~intermidiate_results() {
     intermidiate_result *intermidiate_result_ = NULL;
     int result_size = (int)this->results.size();
-
     for( int i = 0 ; i < result_size ; i++ ) {
         intermidiate_result_ = this->results[0];
         this->results.erase(this->results.begin());
@@ -127,12 +125,10 @@ bool join(file_array *file_array, intermidiate_results *intermidiate_results_, s
 relation *create_relation_from_intermidiate_results_for_join(struct file *file, intermidiate_results *intermidiate_results_, int *intermidiate_result_index, int column) {
     intermidiate_content *intermidiate_content_results = intermidiate_results_->results[intermidiate_result_index[0]]->content[intermidiate_result_index[1]];
     relation *R = new relation(intermidiate_content_results->row_ids.size());
-
     for( uint64_t i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ ) {
         R->tuples[i].row_id = i;
         R->tuples[i].value = file->array[intermidiate_content_results->row_ids[i]][column];
     }
-
     return R;
 }
 
@@ -595,7 +591,6 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
-    //    intermidiate_results_->print_intermidiate_results();
     }
 
     // execute joins
@@ -607,14 +602,12 @@ void execute_query(void *argument) {
             delete execute_query_arguments->sql_query_;
             return;
         }
-    //    intermidiate_results_->print_intermidiate_results();
     }
 
     projection_sum_results(execute_query_arguments->file_array_, intermidiate_results_, execute_query_arguments->sql_query_, execute_query_arguments->results, execute_query_arguments->result_index);
 
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
-//    free_pointer(&execute_query_arguments);
 }
 
 void read_queries(file_array *file_array) {
@@ -626,12 +619,11 @@ void read_queries(file_array *file_array) {
     extern struct job_scheduler *job_scheduler;
 
     while( true ) {
-        result_index = 0;
-         while( getline(&query, &length, stdin) != -1 ) {
+         for( result_index = 0 ; getline(&query, &length, stdin) != -1 ; result_index++ ) {
             query[strlen(query)-1]='\0';
             if( strcmp(query,"F")==0 )
                 break;
-            else if( strcmp(query,"Done")==0 ) {
+            else if( strcmp(query,"Done") == 0 ) {
                 stop = true;
                 break;
             }
@@ -644,8 +636,6 @@ void read_queries(file_array *file_array) {
             schedule_job_scheduler(job_scheduler,execute_query,execute_query_arguments,&job_barrier);
         //    execute_query(execute_query_arguments);
         //    free_pointer(&execute_query_arguments);
-
-            result_index++;
         }
         // wait until the whole batch ends
         dynamic_barrier_job_scheduler(job_scheduler,&job_barrier);

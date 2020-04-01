@@ -20,6 +20,7 @@
 
 #define SUCCESS 0
 #define FAILURE -1
+#define NUMBER_OF_THREADS 2
 
 #define error_handler(expression, message)                                  \
     do {                                                                    \
