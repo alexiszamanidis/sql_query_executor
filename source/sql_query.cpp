@@ -28,44 +28,40 @@ void sql_query::parse_relation_query(char *relation_string) {
 // if next predicate is 0.1>30 we will have                 |0,1,1,30,-1|   |0,1,1,30,-1|
 // if next predicate is 1.2<40 we will have                                 |1,2,2,40,-1|
 void sql_query::parse_predicate_query(char *predicate_string) {
-    char *token_1 = NULL, *token_2 = NULL;
+    char *token = NULL;
     int row_1, column_1, row_2, column_2, i, operator_int = 0;
     char operator_string[]=" ";
-    while ( (token_1 = strtok_r(predicate_string, "&", &predicate_string)) != NULL ) {
-        i = 0;
-        while( token_1[i] != '\0' ) {
-            if( token_1[i] == '=' ) {
-                operator_string[0] = token_1[i];
+    while( (token = strtok_r(predicate_string, "&", &predicate_string)) != NULL ) {
+        for( i = 0 ; token[i] != '\0' ; i++ ) {
+            if( token[i] == '=' ) {
+                operator_string[0] = token[i];
                 operator_int = EQUAL;
                 break;
             }
-            else if( token_1[i] == '>' ) {
-                operator_string[0] = token_1[i];
+            else if( token[i] == '>' ) {
+                operator_string[0] = token[i];
                 operator_int = GREATER;
                 break;
             }
-            else if( token_1[i] == '<' ) {
-                operator_string[0] = token_1[i];
+            else if( token[i] == '<' ) {
+                operator_string[0] = token[i];
                 operator_int = LESS;
                 break;
             }
-            i++;
         }
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row_1 = atoi(token_2);
-        token_2 = strtok_r(token_1, operator_string, &token_1);
-        column_1 = atoi(token_2);
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row_2 = atoi(token_2);
-        token_2 = strtok_r(token_1, "", &token_1);
+        row_1 = atoi(strtok_r(token, ".", &token));
+        column_1 =  atoi(strtok_r(token, operator_string, &token));
+        row_2 = atoi(strtok_r(token, ".", &token));
+        token = strtok_r(token, "", &token);
 
-        // if token_2 is NULL it means that we have a filter, so the column_2 will be -1
-        if( token_2 == NULL )
+        // if token is NULL it means that we have a filter, so the column_2 will be -1
+        if( token == NULL )
             column_2 = -1;
         else
-            column_2 = atoi(token_2);
+            column_2 = atoi(token);
 
         std::vector<int> predicate;
+        predicate.reserve(5);
         predicate.push_back(row_1);
         predicate.push_back(column_1);
         predicate.push_back(operator_int);
@@ -81,15 +77,14 @@ void sql_query::parse_predicate_query(char *predicate_string) {
 // if the projection is 0.0, we will have   [0,0]   |0 0|
 // if next projection is 1.2 we will have           |1 2|
 void sql_query::parse_projection_query(char * projection_string) {
-    char *token_1 = NULL, *token_2 = NULL;
+    char *token = NULL;
     int row, column;
-    while ( (token_1 = strtok_r(projection_string, " ", &projection_string)) != NULL ) {
-        token_2 = strtok_r(token_1, ".", &token_1);
-        row = atoi(token_2);
-        token_2 = strtok_r(token_1, ".", &token_1);
-        column = atoi(token_2);
+    while ( (token = strtok_r(projection_string, " ", &projection_string)) != NULL ) {
+        row = atoi(strtok_r(token, ".", &token));
+        column = atoi(strtok_r(token, ".", &token));
         
         std::vector<int> projection;
+        projection.reserve(2);
         projection.push_back(row);
         projection.push_back(column);
         this->projections.push_back(projection);
@@ -98,18 +93,17 @@ void sql_query::parse_projection_query(char * projection_string) {
 
 void sql_query::sql_query_print() {
     std::cout << "Relations:" << std::endl;
-    for( uint i = 0; i < this->relations.size() ; i++ )
-        std::cout << this->relations[i] << " ";
-    std::cout << std::endl;
-    std::cout << "Filters:" << std::endl;
-    for( uint i = 0; i < this->filters.size() ; i++ ) {
-        std::cout << this->filters[i][0] << " " << this->filters[i][1] << " " << this->filters[i][2];
-        std::cout << " " << this->filters[i][3] << " " << this->filters[i][4] << std::endl;
+    for( auto relation : this->relations )
+        std::cout << relation << " ";
+    std::cout << std::endl << "Filters:" << std::endl;
+    for( auto filter : this->filters ) {
+        std::cout << filter[0] << " " << filter[1] << " " << filter[2];
+        std::cout << " " << filter[3] << " " << filter[4] << std::endl;
     }
     std::cout << "Joins:" << std::endl;
-    for( uint i = 0; i < this->joins.size() ; i++ ) {
-        std::cout << this->joins[i][0] << " " << this->joins[i][1] << " " << this->joins[i][2];
-        std::cout << " " << this->joins[i][3] << " " << this->joins[i][4] << std::endl;
+    for( auto join : this->joins ) {
+        std::cout << join[0] << " " << join[1] << " " << join[2];
+        std::cout << " " << join[3] << " " << join[4] << std::endl;
     }
 }
 
@@ -131,13 +125,13 @@ void sql_query::sort_by_frequency() {
     std::map<std::string, int> map;
 
     // push filters frequency
-    for( uint i = 0; i < this->filters.size() ; i++ )
-        increase_number_of_predicates(map,this->filters[i][0],this->filters[i][1]);
+    for( auto filter : this->filters )
+        increase_number_of_predicates(map,filter[0],filter[1]);
 
     // push joins frequency
-    for( uint i = 0; i < this->joins.size() ; i++ ) {
-        increase_number_of_predicates(map,this->joins[i][0],this->joins[i][1]);
-        increase_number_of_predicates(map,this->joins[i][3],this->joins[i][4]);
+    for( auto join : this->joins ) {
+        increase_number_of_predicates(map,join[0],join[1]);
+        increase_number_of_predicates(map,join[3],join[4]);
     }
 
     // sort map by frequency
@@ -145,15 +139,15 @@ void sql_query::sort_by_frequency() {
     std::sort(sorted_by_freq.begin(), sorted_by_freq.end(), compare_number_of_predicates);
 
     // remove filters frequency
-    for( uint i = 0; i < this->filters.size() ; i++ ) {
-        std::string string = std::to_string(this->filters[i][0]) + "." + std::to_string(this->filters[i][1]);
+    for( auto filter : this->filters ) {
+        std::string string = std::to_string(filter[0]) + "." + std::to_string(filter[1]);
         auto it = std::find_if( sorted_by_freq.begin(), sorted_by_freq.end(),[&string](const std::pair<std::string, int>& element){ return element.first == string;} );
         it->second = it->second-1;
     }
 
     uint swap_index = 0, i;
     // optimize query by swapping the predicates
-    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it) {
+    for( auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it ) {
         int frequency = 0;
         while( frequency < it->second ) {
             // find where the predicate is, also decrease other predicate frequency

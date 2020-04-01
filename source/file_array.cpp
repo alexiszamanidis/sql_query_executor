@@ -68,9 +68,7 @@ file_array::file_array() {
 }
 
 file_array::~file_array() {
-    struct file *file;
-    for( uint i = 0 ; i < this->files.size() ; i++) {
-        file = this->files[i];
+    for( auto file : this->files ) {
         free_pointer(&file->name);
         free_2d_array(&file->array);
         free_pointer(&file->statistics_);
@@ -94,10 +92,8 @@ struct file *file_array::initialize_file(char *file, uint64_t number_of_rows, ui
 }
 
 void file_array::print_file_array() {
-    struct file *file;
     std::cout << "files: " << std::endl;
-    for( uint i = 0 ; i < this->files.size() ; i++) {
-        file = this->files[i];
+    for( auto file : this->files ) {
         std::cout << "filename = " << file->name << ", number of rows = "<< file->number_of_rows <<", number of columns = " << file->number_of_columns << std::endl;
         for( uint l = 0 ; l < file->number_of_columns ; l++ )
             std::cout << "statistics[" << l << "]: " << file->statistics_[l].min_value << " " << file->statistics_[l].max_value << " " << file->statistics_[l].number_of_rows << " " << file->statistics_[l].distinct_values << " " << std::endl;
