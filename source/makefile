@@ -1,13 +1,13 @@
 CC = g++
 CFLAGS = -g -Wall -O3 -pthread -std=c++11
 RMFLAGS = -rf
-EXEC = project
+EXEC = join
 OBJS = utilities.o relation.o results.o sql_query.o file_array.o queue.o job_scheduler.o  intermidiate_results.o
 
-all: project usage
+all: join usage
 
-project: $(OBJS) project.cpp
-	$(CC) $(CFLAGS) $(OBJS) project.cpp -o $(EXEC)
+join: $(OBJS) join.cpp
+	$(CC) $(CFLAGS) $(OBJS) join.cpp -o $(EXEC)
 	rm $(RMFLAGS) $(OBJS)
 
 utilities.o: utilities.cpp
@@ -35,7 +35,7 @@ intermidiate_results.o: intermidiate_results.cpp
 	$(CC) $(CFLAGS) -c intermidiate_results.cpp
 
 usage:
-	@echo 'Usage of project: valgrind ./project < ../inputfiles/inputfile_small'
+	@echo 'Usage of join: valgrind ./join < ../inputfiles/inputfile_small'
 
 clean:
 	rm $(RMFLAGS) $(EXEC) $(OBJS)
