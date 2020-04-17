@@ -30,7 +30,7 @@
 *.exe
 *.out
 *.app
-project
+join
 
 # output files
 *.csv
