@@ -93,18 +93,17 @@ void sql_query::parse_projection_query(char * projection_string) {
 
 void sql_query::sql_query_print() {
     std::cout << "Relations:" << std::endl;
-    for( uint i = 0; i < this->relations.size() ; i++ )
-        std::cout << this->relations[i] << " ";
-    std::cout << std::endl;
-    std::cout << "Filters:" << std::endl;
-    for( uint i = 0; i < this->filters.size() ; i++ ) {
-        std::cout << this->filters[i][0] << " " << this->filters[i][1] << " " << this->filters[i][2];
-        std::cout << " " << this->filters[i][3] << " " << this->filters[i][4] << std::endl;
+    for( auto relation : this->relations )
+        std::cout << relation << " ";
+    std::cout << std::endl << "Filters:" << std::endl;
+    for( auto filter : this->filters ) {
+        std::cout << filter[0] << " " << filter[1] << " " << filter[2];
+        std::cout << " " << filter[3] << " " << filter[4] << std::endl;
     }
     std::cout << "Joins:" << std::endl;
-    for( uint i = 0; i < this->joins.size() ; i++ ) {
-        std::cout << this->joins[i][0] << " " << this->joins[i][1] << " " << this->joins[i][2];
-        std::cout << " " << this->joins[i][3] << " " << this->joins[i][4] << std::endl;
+    for( auto join : this->joins ) {
+        std::cout << join[0] << " " << join[1] << " " << join[2];
+        std::cout << " " << join[3] << " " << join[4] << std::endl;
     }
 }
 
@@ -126,13 +125,13 @@ void sql_query::sort_by_frequency() {
     std::map<std::string, int> map;
 
     // push filters frequency
-    for( uint i = 0; i < this->filters.size() ; i++ )
-        increase_number_of_predicates(map,this->filters[i][0],this->filters[i][1]);
+    for( auto filter : this->filters )
+        increase_number_of_predicates(map,filter[0],filter[1]);
 
     // push joins frequency
-    for( uint i = 0; i < this->joins.size() ; i++ ) {
-        increase_number_of_predicates(map,this->joins[i][0],this->joins[i][1]);
-        increase_number_of_predicates(map,this->joins[i][3],this->joins[i][4]);
+    for( auto join : this->joins ) {
+        increase_number_of_predicates(map,join[0],join[1]);
+        increase_number_of_predicates(map,join[3],join[4]);
     }
 
     // sort map by frequency
@@ -140,15 +139,15 @@ void sql_query::sort_by_frequency() {
     std::sort(sorted_by_freq.begin(), sorted_by_freq.end(), compare_number_of_predicates);
 
     // remove filters frequency
-    for( uint i = 0; i < this->filters.size() ; i++ ) {
-        std::string string = std::to_string(this->filters[i][0]) + "." + std::to_string(this->filters[i][1]);
+    for( auto filter : this->filters ) {
+        std::string string = std::to_string(filter[0]) + "." + std::to_string(filter[1]);
         auto it = std::find_if( sorted_by_freq.begin(), sorted_by_freq.end(),[&string](const std::pair<std::string, int>& element){ return element.first == string;} );
         it->second = it->second-1;
     }
 
     uint swap_index = 0, i;
     // optimize query by swapping the predicates
-    for(auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it) {
+    for( auto it = sorted_by_freq.begin(); it != sorted_by_freq.end(); ++it ) {
         int frequency = 0;
         while( frequency < it->second ) {
             // find where the predicate is, also decrease other predicate frequency

@@ -502,25 +502,25 @@ bool filter(file_array *file_array, intermidiate_results *intermidiate_results_,
         intermidiate_content_results = intermidiate_results_->results[filter_index[0]]->content[filter_index[1]];
         filter_results = new intermidiate_content(relations[predicate[RELATION_A]],predicate[RELATION_A],intermidiate_content_results->row_ids.size());
         if( operator_ == EQUAL ) {
-            for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] == filter_number )
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] == file->array[intermidiate_content_results->row_ids[i]][column_b])
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
+            for( auto row_id : intermidiate_content_results->row_ids )
+                if( column_b == -1 && file->array[row_id][column_a] == filter_number )
+                    filter_results->row_ids.push_back(row_id);
+                else if( column_b != -1 && file->array[row_id][column_a] == file->array[row_id][column_b])
+                    filter_results->row_ids.push_back(row_id);
         }
         else if( operator_ == GREATER ) {
-            for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] > filter_number )
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] > file->array[intermidiate_content_results->row_ids[i]][column_b])
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
+            for( auto row_id : intermidiate_content_results->row_ids )
+                if( column_b == -1 && file->array[row_id][column_a] > filter_number )
+                    filter_results->row_ids.push_back(row_id);
+                else if( column_b != -1 && file->array[row_id][column_a] > file->array[row_id][column_b])
+                    filter_results->row_ids.push_back(row_id);
         }
         else {	// LESS
-            for( uint i = 0 ; i < intermidiate_content_results->row_ids.size() ; i++ )
-                if( column_b == -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] < filter_number )
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
-                else if( column_b != -1 && file->array[intermidiate_content_results->row_ids[i]][column_a] < file->array[intermidiate_content_results->row_ids[i]][column_b])
-                    filter_results->row_ids.push_back(intermidiate_content_results->row_ids[i]);
+            for( auto row_id : intermidiate_content_results->row_ids )
+                if( column_b == -1 && file->array[row_id][column_a] < filter_number )
+                    filter_results->row_ids.push_back(row_id);
+                else if( column_b != -1 && file->array[row_id][column_a] < file->array[row_id][column_b])
+                    filter_results->row_ids.push_back(row_id);
         }
 
         intermidiate_results_->results[filter_index[0]]->content.erase(intermidiate_results_->results[filter_index[0]]->content.begin()+filter_index[1]);
@@ -542,8 +542,8 @@ void projection_sum_results_job(void *argument) {
     int64_t sum = 0;
     struct file *file = projection_sum_results_arguments->file_array_->files[projection_sum_results_arguments->file_index];
     intermidiate_content *intermidiate_content_ = projection_sum_results_arguments->intermidiate_results_->results[projection_sum_results_arguments->intermidiate_result_index[0]]->content[projection_sum_results_arguments->intermidiate_result_index[1]];
-    for( uint j = 0 ; j < intermidiate_content_->row_ids.size() ; j++ )
-        sum = sum + file->array[intermidiate_content_->row_ids[j]][projection_sum_results_arguments->column];
+    for( auto rows_id : intermidiate_content_->row_ids )
+        sum = sum + file->array[rows_id][projection_sum_results_arguments->column];
     projection_sum_results_arguments->results[projection_sum_results_arguments->result_index][projection_sum_results_arguments->result_column] = sum;
     free_pointer(&projection_sum_results_arguments->intermidiate_result_index);
 }
@@ -587,9 +587,7 @@ void execute_query(void *argument) {
         return_value = filter(execute_query_arguments->file_array_,intermidiate_results_,execute_query_arguments->sql_query_->relations,execute_query_arguments->sql_query_->filters[i]);
         if( return_value == false ) {
             inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
-            delete intermidiate_results_;
-            delete execute_query_arguments->sql_query_;
-            return;
+            goto free;
         }
     }
 
@@ -598,14 +596,13 @@ void execute_query(void *argument) {
         return_value = join(execute_query_arguments->file_array_,intermidiate_results_,execute_query_arguments->sql_query_->relations,execute_query_arguments->sql_query_->joins[i]);
         if( return_value == false ) {
             inform_results_with_null(execute_query_arguments->sql_query_->projections.size(),execute_query_arguments->results, execute_query_arguments->result_index);
-            delete intermidiate_results_;
-            delete execute_query_arguments->sql_query_;
-            return;
+            goto free;
         }
     }
 
     projection_sum_results(execute_query_arguments->file_array_, intermidiate_results_, execute_query_arguments->sql_query_, execute_query_arguments->results, execute_query_arguments->result_index);
 
+    free:
     delete intermidiate_results_;
     delete execute_query_arguments->sql_query_;
 }
